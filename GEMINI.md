@@ -17,7 +17,7 @@ Build a modern, premium web application for tracking development team member tas
 
 ## Documentation
 - [Design Specification](docs/design_spec.md)
-- [Implementation Plan](file:///Users/wk/.gemini/antigravity/brain/8d7da57a-7eb1-4c64-9e48-fd0d85d56ae9/implementation_plan.md)
+- [Implementation Plan](docs/implementation_plan.md)
 
 ## Current Status
 - Design phase complete.
