@@ -4,7 +4,7 @@
 The Settings page allows users to customize their experience, manage their profile, and configure application preferences.
 
 ## Visual Reference
-*(Mockup generation pending)*
+![Settings Page Mockup](assets/settings_page_mockup.png)
 
 ## Key Features
 
