@@ -50,9 +50,27 @@ This document provides concrete implementation details for the "Premium Dark Mod
 - **Glow**: `hover:shadow-indigo-500/20`
 
 ## 4. Spacing & Layout
-- **Page Padding**: `p-6` or `p-8`
+
+### Page Structure
+- **Sidebar Width**: `w-64` (256px) fixed on Desktop. Collapsible on Mobile.
+- **Top Bar Height**: `h-16` (64px) fixed.
+- **Content Area**: Fluid width with `max-w-7xl` (1280px) container centered.
+
+### Responsive Breakpoints
+- **Mobile (sm)**: `< 640px` - Single column, stacked layout. Sidebar hidden (drawer).
+- **Tablet (md)**: `640px - 1024px` - Fluid grid (2 cols). Sidebar collapsed to icons.
+- **Desktop (lg)**: `> 1024px` - Full layout. Sidebar expanded.
+- **Wide (xl)**: `> 1280px` - Max width centered content.
+
+### Grid System
+- **Dashboard**: 4-column grid for stats (`grid-cols-1 md:grid-cols-2 lg:grid-cols-4`).
+- **Kanban**: Horizontal scroll container or flex row.
+- **Team Grid**: Responsive grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`).
+
+### Spacing Tokens
+- **Page Padding**: `p-4` (Mobile) / `p-6` (Tablet) / `p-8` (Desktop)
 - **Card Padding**: `p-6`
-- **Gap**: `gap-4` or `gap-6`
+- **Gap**: `gap-4` (16px) or `gap-6` (24px)
 - **Radius**: `rounded-xl` (12px) or `rounded-2xl` (16px)
 
 ## 5. Visual Assets
