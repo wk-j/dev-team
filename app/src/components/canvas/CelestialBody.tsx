@@ -11,7 +11,7 @@ export type OrbitalState = "open" | "focused" | "deep_work" | "away" | "supernov
 interface CelestialBodyProps {
   id: string;
   name: string;
-  role: string;
+  role?: string;
   starType: StarType;
   orbitalState: OrbitalState;
   position: [number, number, number];

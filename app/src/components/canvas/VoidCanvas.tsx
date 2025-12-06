@@ -5,7 +5,7 @@ import { Suspense, useState, useMemo } from "react";
 import { VoidEnvironment, getTimeOfDayFromHour, getWeatherFromTeamHealth } from "./VoidEnvironment";
 import { CameraController } from "./CameraController";
 import { ParticleField } from "./ParticleField";
-import { ConstellationView } from "./ConstellationView";
+import { ConstellationView, type TeamMember } from "./ConstellationView";
 import { PerformanceMonitor } from "./PerformanceMonitor";
 import { ResonanceConnections, generateMockConnections } from "./ResonanceConnections";
 import { StreamsView, mockStreams, type StreamState } from "./Stream";
@@ -46,6 +46,7 @@ interface VoidCanvasProps {
   streams?: Stream[];
   workItems?: WorkItem[];
   // Team data
+  teamMembers?: TeamMember[];
   teamMemberCount?: number;
   // Dive mode
   diveMode?: DiveModeState | null;
@@ -60,9 +61,9 @@ interface VoidCanvasProps {
 }
 
 // Transform API stream data to component format
-function transformStreams(apiStreams: Stream[] | undefined) {
+function transformStreams(apiStreams: Stream[] | undefined, useMockData: boolean = false) {
   if (!apiStreams || apiStreams.length === 0) {
-    return mockStreams;
+    return useMockData ? mockStreams : [];
   }
 
   return apiStreams.map((stream, index) => ({
@@ -70,9 +71,12 @@ function transformStreams(apiStreams: Stream[] | undefined) {
     name: stream.name,
     pathPoints: stream.pathPoints.length >= 2 
       ? stream.pathPoints 
-      : mockStreams[index % mockStreams.length]?.pathPoints ?? [
-          { x: -20, y: 0, z: 0 },
-          { x: 20, y: 0, z: 0 },
+      : [
+          { x: -20 + index * 5, y: index * 2, z: 0 },
+          { x: -10 + index * 5, y: 2 + index, z: 5 },
+          { x: 0 + index * 5, y: index * 2, z: 0 },
+          { x: 10 + index * 5, y: -2 + index, z: -5 },
+          { x: 20 + index * 5, y: index * 2, z: 0 },
         ],
     state: stream.state as StreamState,
     velocity: stream.velocity,
@@ -82,18 +86,19 @@ function transformStreams(apiStreams: Stream[] | undefined) {
 }
 
 // Transform API work item data to component format
-function transformWorkItems(apiWorkItems: WorkItem[] | undefined) {
+function transformWorkItems(apiWorkItems: WorkItem[] | undefined, useMockData: boolean = false) {
   if (!apiWorkItems || apiWorkItems.length === 0) {
-    return mockWorkItems;
+    return useMockData ? mockWorkItems : [];
   }
 
   return apiWorkItems.map((item, index) => {
-    // Generate position based on stream position or use mock positions
-    const mockItem = mockWorkItems[index % mockWorkItems.length];
-    const position: [number, number, number] = mockItem?.position ?? [
-      (Math.random() - 0.5) * 40,
-      (Math.random() - 0.5) * 20,
-      (Math.random() - 0.5) * 30,
+    // Generate position based on index
+    const angle = (index / apiWorkItems.length) * Math.PI * 2;
+    const radius = 15 + (index % 3) * 5;
+    const position: [number, number, number] = [
+      Math.cos(angle) * radius,
+      (Math.random() - 0.5) * 10,
+      Math.sin(angle) * radius,
     ];
 
     return {
@@ -118,6 +123,7 @@ export function VoidCanvas({
   showCrystalGarden = true,
   streams: apiStreams,
   workItems: apiWorkItems,
+  teamMembers = [],
   teamMemberCount = 6,
   diveMode,
   currentUserId,
@@ -128,25 +134,29 @@ export function VoidCanvas({
   reducedMotion = false,
   particleDensity = 1.0,
 }: VoidCanvasProps) {
-  const [connections] = useState(() => generateMockConnections(mockTeamPositions));
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
 
-  // Transform API data to component format, memoized
-  const streams = useMemo(() => transformStreams(apiStreams), [apiStreams]);
-  const workItems = useMemo(() => transformWorkItems(apiWorkItems), [apiWorkItems]);
+  // Check if we have real data
+  const hasRealData = (apiStreams && apiStreams.length > 0) || (apiWorkItems && apiWorkItems.length > 0);
+
+  // Transform API data to component format, memoized (no mock data fallback)
+  const streams = useMemo(() => transformStreams(apiStreams, false), [apiStreams]);
+  const workItems = useMemo(() => transformWorkItems(apiWorkItems, false), [apiWorkItems]);
+
+  // Only show connections if we have real data (empty array otherwise)
+  const connections = useMemo(() => {
+    if (!hasRealData) return [];
+    return generateMockConnections(mockTeamPositions);
+  }, [hasRealData]);
 
   // Calculate team metrics for PulseCore
   const teamMetrics = useMemo(() => {
     return calculateTeamMetrics(workItems, teamMemberCount);
   }, [workItems, teamMemberCount]);
 
-  // Create crystals from completed work items
+  // Create crystals from completed work items (no mock fallback)
   const crystals = useMemo(() => {
     const crystallizedItems = workItems.filter(item => item.energyState === "crystallized");
-    if (crystallizedItems.length === 0) {
-      // Use mock crystals for demo
-      return createMockCrystals(8);
-    }
     return crystallizedItems.map(item => ({
       id: item.id,
       title: item.title,
@@ -276,7 +286,7 @@ export function VoidCanvas({
               {showConnections && <ResonanceConnections connections={connections} />}
 
               {/* Layer 5: Team members (foreground) */}
-              <ConstellationView />
+              <ConstellationView members={teamMembers} />
             </>
           )}
 

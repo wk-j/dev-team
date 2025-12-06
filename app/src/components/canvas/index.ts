@@ -4,6 +4,7 @@ export type { TimeOfDay, WeatherState } from "./VoidEnvironment";
 export { CameraController } from "./CameraController";
 export { ParticleField } from "./ParticleField";
 export { ConstellationView } from "./ConstellationView";
+export type { TeamMember } from "./ConstellationView";
 export { CelestialBody } from "./CelestialBody";
 export { IntentionWheel, useIntentionWheel, userActions, streamActions, workItemActions } from "./IntentionWheel";
 export { PerformanceMonitor } from "./PerformanceMonitor";

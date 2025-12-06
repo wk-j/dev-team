@@ -348,3 +348,9 @@ export function useHandoffWorkItem() {
 
   return { handoff, isLoading, error };
 }
+
+// Team hooks
+export function useTeam(options?: UseDataOptions) {
+  const fetcher = useCallback(() => api.getTeam(), []);
+  return useData(fetcher, options);
+}

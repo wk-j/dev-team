@@ -293,6 +293,29 @@ class ApiClient {
   async deletePing(id: string): Promise<void> {
     return this.fetch(`/pings/${id}`, { method: "DELETE" });
   }
+
+  // Team
+  async getTeam(): Promise<{
+    id: string;
+    name: string;
+    description: string | null;
+    currentUserRole: string;
+    members: Array<{
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      avatarUrl: string | null;
+      userRole: string | null;
+      starType: string;
+      orbitalState: string;
+      energySignatureColor: string;
+      joinedAt: string;
+      lastActiveAt: string | null;
+    }>;
+  }> {
+    return this.fetch("/team");
+  }
 }
 
 export const api = new ApiClient();

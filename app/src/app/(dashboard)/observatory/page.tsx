@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useStreams, useWorkItems, useStream, useDiveMode, useUpdateWorkItem } from "@/lib/api/hooks";
+import { useStreams, useWorkItems, useStream, useDiveMode, useUpdateWorkItem, useTeam } from "@/lib/api/hooks";
 import { useClassicView } from "@/lib/accessibility";
 import { ClassicView } from "@/components/ClassicView";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
@@ -40,6 +40,24 @@ export default function ObservatoryPage() {
   const { data: workItems, isLoading: workItemsLoading, refetch: refetchWorkItems } = useWorkItems(undefined, {
     pollInterval: 30000,
   });
+
+  // Fetch team members for constellation view
+  const { data: team } = useTeam({
+    pollInterval: 60000, // Refresh every minute
+  });
+
+  // Transform team members for canvas
+  const teamMembers = useMemo(() => {
+    if (!team?.members) return [];
+    return team.members.map(m => ({
+      id: m.id,
+      name: m.name,
+      role: m.userRole,
+      starType: m.starType,
+      orbitalState: m.orbitalState,
+      energySignatureColor: m.energySignatureColor,
+    }));
+  }, [team?.members]);
 
   // Dive mode hooks
   const { diveIntoStream, surfaceFromStream, isLoading: diveLoading } = useDiveMode();
@@ -146,7 +164,7 @@ export default function ObservatoryPage() {
         <ClassicView
           streams={streams ?? []}
           workItems={workItems ?? []}
-          teamMembers={[]} // TODO: fetch team members
+          teamMembers={teamMembers}
           onStreamClick={handleDiveIntoStream}
           onWorkItemClick={(itemId) => {
             // Find the work item and kindle it
@@ -176,6 +194,8 @@ export default function ObservatoryPage() {
           showPerformance={showPerformance}
           streams={streams ?? undefined}
           workItems={workItems ?? undefined}
+          teamMembers={teamMembers}
+          teamMemberCount={teamMembers.length || 1}
           diveMode={diveMode}
           onDiveIntoStream={handleDiveIntoStream}
           onSurfaceFromStream={handleSurface}
