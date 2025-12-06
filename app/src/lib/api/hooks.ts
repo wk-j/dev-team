@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api, Stream, WorkItem } from "./client";
 
 interface UseDataOptions {
@@ -24,26 +24,43 @@ function useData<T>(
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const fetcherRef = useRef(fetcher);
+  const isMountedRef = useRef(true);
+
+  // Keep fetcher ref updated
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   const fetchData = useCallback(async () => {
     if (!enabled) return;
     
     try {
-      setIsLoading(true);
-      const result = await fetcher();
-      setData(result);
-      setError(null);
+      const result = await fetcherRef.current();
+      if (isMountedRef.current) {
+        setData(result);
+        setError(null);
+        setIsLoading(false);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Unknown error"));
-    } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+        setIsLoading(false);
+      }
     }
-  }, [fetcher, enabled]);
+  }, [enabled]);
 
+  // Initial fetch
   useEffect(() => {
+    isMountedRef.current = true;
     fetchData();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [fetchData]);
 
+  // Polling
   useEffect(() => {
     if (!pollInterval || !enabled) return;
 
@@ -56,14 +73,16 @@ function useData<T>(
 
 // Streams hooks
 export function useStreams(options?: UseDataOptions): UseDataResult<Stream[]> {
-  return useData(() => api.getStreams(), options);
+  const fetcher = useCallback(() => api.getStreams(), []);
+  return useData(fetcher, options);
 }
 
 export function useStream(
   id: string,
   options?: UseDataOptions
 ): UseDataResult<Stream & { workItems: WorkItem[] }> {
-  return useData(() => api.getStream(id), { ...options, enabled: !!id });
+  const fetcher = useCallback(() => api.getStream(id), [id]);
+  return useData(fetcher, { ...options, enabled: !!id });
 }
 
 // Work items hooks
@@ -71,14 +90,19 @@ export function useWorkItems(
   filters?: { streamId?: string; energyState?: string; userId?: string },
   options?: UseDataOptions
 ): UseDataResult<WorkItem[]> {
-  return useData(() => api.getWorkItems(filters), options);
+  const fetcher = useCallback(
+    () => api.getWorkItems(filters), 
+    [filters?.streamId, filters?.energyState, filters?.userId]
+  );
+  return useData(fetcher, options);
 }
 
 export function useWorkItem(
   id: string,
   options?: UseDataOptions
 ): UseDataResult<WorkItem> {
-  return useData(() => api.getWorkItem(id), { ...options, enabled: !!id });
+  const fetcher = useCallback(() => api.getWorkItem(id), [id]);
+  return useData(fetcher, { ...options, enabled: !!id });
 }
 
 // Mutation hooks
