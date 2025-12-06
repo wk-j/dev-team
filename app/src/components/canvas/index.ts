@@ -15,8 +15,10 @@ export { DiveMode } from "./DiveMode";
 export { PulseCore, calculateTeamMetrics } from "./PulseCore";
 export { CrystalGarden, createMockCrystals } from "./CrystalGarden";
 export { QuickStats, getTimeOfDay, calculateQuickStats } from "./QuickStats";
+export { PingEffect, PingArrivalEffect, PingManager } from "./PingEffect";
 
 export type { StarType, OrbitalState } from "./CelestialBody";
+export type { PingType as PingEffectType } from "./PingEffect";
 export type { IntentionWheelAction } from "./IntentionWheel";
 export type { StreamState } from "./Stream";
 export type { EnergyState, WorkItemDepth } from "./EnergyOrb";

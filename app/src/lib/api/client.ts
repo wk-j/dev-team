@@ -79,6 +79,38 @@ export interface ObservatoryMetrics {
   inDeepWork: number;
 }
 
+export type PingType = "gentle" | "warm" | "direct";
+export type PingStatus = "sent" | "delivered" | "read" | "expired";
+
+export interface PingUser {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  starType: string;
+  orbitalState: string;
+  energySignatureColor: string;
+}
+
+export interface Ping {
+  id: string;
+  type: PingType;
+  status: PingStatus;
+  message: string | null;
+  relatedWorkItemId: string | null;
+  relatedStreamId: string | null;
+  sentAt: string;
+  deliveredAt: string | null;
+  readAt: string | null;
+  expiresAt: string | null;
+  fromUser: PingUser;
+  toUser?: PingUser;
+}
+
+export interface PingInbox {
+  pings: Ping[];
+  unreadCount: number;
+}
+
 class ApiClient {
   private baseUrl = "/api";
 
@@ -198,6 +230,68 @@ class ApiClient {
 
   async deleteWorkItem(id: string): Promise<void> {
     return this.fetch(`/work-items/${id}`, { method: "DELETE" });
+  }
+
+  async handoffWorkItem(
+    id: string,
+    toUserId: string,
+    message?: string
+  ): Promise<{
+    workItem: WorkItem;
+    handoff: {
+      from: { id: string; name: string; avatarUrl: string | null };
+      to: { id: string; name: string; avatarUrl: string | null };
+      message?: string;
+      handedOffAt: string;
+    };
+  }> {
+    return this.fetch(`/work-items/${id}/handoff`, {
+      method: "POST",
+      body: JSON.stringify({ toUserId, message }),
+    });
+  }
+
+  // Pings
+  async getPings(filters?: {
+    status?: PingStatus;
+    type?: PingType;
+    direction?: "received" | "sent";
+  }): Promise<PingInbox> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set("status", filters.status);
+    if (filters?.type) params.set("type", filters.type);
+    if (filters?.direction) params.set("direction", filters.direction);
+
+    const query = params.toString();
+    return this.fetch<PingInbox>(`/pings${query ? `?${query}` : ""}`);
+  }
+
+  async getPing(id: string): Promise<Ping> {
+    return this.fetch(`/pings/${id}`);
+  }
+
+  async sendPing(data: {
+    toUserId: string;
+    type: PingType;
+    message?: string;
+    relatedWorkItemId?: string;
+    relatedStreamId?: string;
+  }): Promise<{ ping: Ping }> {
+    return this.fetch("/pings", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async markPingAsRead(id: string): Promise<Ping> {
+    return this.fetch(`/pings/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "read" }),
+    });
+  }
+
+  async deletePing(id: string): Promise<void> {
+    return this.fetch(`/pings/${id}`, { method: "DELETE" });
   }
 }
 

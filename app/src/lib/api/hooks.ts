@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { api, Stream, WorkItem } from "./client";
+import { api, Stream, WorkItem, PingInbox, Ping, PingType, PingStatus } from "./client";
 
 interface UseDataOptions {
   pollInterval?: number;
@@ -251,4 +251,100 @@ export function useDiveMode() {
     isLoading,
     error,
   };
+}
+
+// Pings hooks
+export function usePings(
+  filters?: { status?: PingStatus; type?: PingType; direction?: "received" | "sent" },
+  options?: UseDataOptions
+): UseDataResult<PingInbox> {
+  const fetcher = useCallback(
+    () => api.getPings(filters),
+    [filters?.status, filters?.type, filters?.direction]
+  );
+  return useData(fetcher, options);
+}
+
+export function usePing(id: string, options?: UseDataOptions): UseDataResult<Ping> {
+  const fetcher = useCallback(() => api.getPing(id), [id]);
+  return useData(fetcher, { ...options, enabled: !!id });
+}
+
+export function useSendPing() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const sendPing = useCallback(
+    async (data: {
+      toUserId: string;
+      type: PingType;
+      message?: string;
+      relatedWorkItemId?: string;
+      relatedStreamId?: string;
+    }) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await api.sendPing(data);
+        return result.ping;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  return { sendPing, isLoading, error };
+}
+
+export function useMarkPingAsRead() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const markAsRead = useCallback(async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await api.markPingAsRead(id);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error("Unknown error");
+      setError(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { markAsRead, isLoading, error };
+}
+
+// Handoff hook
+export function useHandoffWorkItem() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const handoff = useCallback(
+    async (workItemId: string, toUserId: string, message?: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await api.handoffWorkItem(workItemId, toUserId, message);
+        return result;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  return { handoff, isLoading, error };
 }
