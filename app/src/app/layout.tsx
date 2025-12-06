@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
+import { AccessibilityProvider, SkipLink } from "@/lib/accessibility";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -36,7 +37,10 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${ibmPlexSans.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        {children}
+        <AccessibilityProvider>
+          <SkipLink />
+          {children}
+        </AccessibilityProvider>
       </body>
     </html>
   );

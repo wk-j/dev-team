@@ -3,6 +3,8 @@
 import { useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useStreams, useWorkItems, useStream, useDiveMode, useUpdateWorkItem } from "@/lib/api/hooks";
+import { useClassicView } from "@/lib/accessibility";
+import { ClassicView } from "@/components/ClassicView";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
 
@@ -26,6 +28,9 @@ export default function ObservatoryPage() {
   const [showPerformance, setShowPerformance] = useState(false);
   const [showStats, setShowStats] = useState(true);
   const [diveMode, setDiveMode] = useState<DiveModeState | null>(null);
+  
+  // Check if classic view is enabled
+  const isClassicView = useClassicView();
   
   // Fetch real data from API
   const { data: streams, isLoading: streamsLoading, error: streamsError, refetch: refetchStreams } = useStreams({
@@ -134,10 +139,28 @@ export default function ObservatoryPage() {
   const isLoading = streamsLoading || workItemsLoading;
   const hasError = !!streamsError;
 
+  // Render classic 2D view if accessibility setting is enabled
+  if (isClassicView) {
+    return (
+      <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-auto">
+        <ClassicView
+          streams={streams ?? []}
+          workItems={workItems ?? []}
+          teamMembers={[]} // TODO: fetch team members
+          onStreamClick={handleDiveIntoStream}
+          onWorkItemClick={(itemId) => {
+            // Find the work item and kindle it
+            handleKindleWorkItem(itemId);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="h-[calc(100vh-4rem)] relative overflow-hidden">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] relative overflow-hidden">
       {/* Full-screen 3D Canvas */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 canvas-container">
         {diveLoading && (
           <div className="absolute inset-0 bg-void-deep/80 flex items-center justify-center z-10">
             <div className="text-center">

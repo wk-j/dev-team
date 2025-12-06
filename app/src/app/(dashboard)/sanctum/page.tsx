@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAccessibility } from "@/lib/accessibility";
 
 interface UserProfile {
   id: string;
@@ -118,6 +119,9 @@ export default function SanctumPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  
+  // Get accessibility context to sync settings globally
+  const { updateSetting } = useAccessibility();
 
   // Form state
   const [name, setName] = useState("");
@@ -147,7 +151,16 @@ export default function SanctumPage() {
         setStarType(data.starType);
         setEnergyColor(data.energySignatureColor);
         setOrbitalState(data.orbitalState);
-        setPreferences(data.preferences ?? getDefaultPreferences());
+        
+        const prefs = data.preferences ?? getDefaultPreferences();
+        setPreferences(prefs);
+        
+        // Sync accessibility settings with global provider
+        if (prefs.accessibility) {
+          updateSetting("highContrast", prefs.accessibility.highContrast);
+          updateSetting("reducedMotion", prefs.accessibility.reducedMotion);
+          updateSetting("classicView", prefs.accessibility.classicView);
+        }
       } catch {
         setError("Failed to load profile");
       } finally {
@@ -155,7 +168,7 @@ export default function SanctumPage() {
       }
     }
     fetchProfile();
-  }, []);
+  }, [updateSetting]);
 
   // Save profile
   const saveProfile = useCallback(async (updates: Record<string, unknown>) => {
@@ -498,28 +511,40 @@ export default function SanctumPage() {
               <div className="space-y-4">
                 <Toggle
                   enabled={preferences.accessibility.highContrast}
-                  onChange={(value) => updatePreferences("accessibility", {
-                    ...preferences.accessibility,
-                    highContrast: value,
-                  })}
+                  onChange={(value) => {
+                    updatePreferences("accessibility", {
+                      ...preferences.accessibility,
+                      highContrast: value,
+                    });
+                    // Sync with global accessibility provider
+                    updateSetting("highContrast", value);
+                  }}
                   label="High Contrast Mode"
                   description="Increase contrast for better visibility"
                 />
                 <Toggle
                   enabled={preferences.accessibility.reducedMotion}
-                  onChange={(value) => updatePreferences("accessibility", {
-                    ...preferences.accessibility,
-                    reducedMotion: value,
-                  })}
+                  onChange={(value) => {
+                    updatePreferences("accessibility", {
+                      ...preferences.accessibility,
+                      reducedMotion: value,
+                    });
+                    // Sync with global accessibility provider
+                    updateSetting("reducedMotion", value);
+                  }}
                   label="Reduced Motion"
                   description="Minimize animations and transitions"
                 />
                 <Toggle
                   enabled={preferences.accessibility.classicView}
-                  onChange={(value) => updatePreferences("accessibility", {
-                    ...preferences.accessibility,
-                    classicView: value,
-                  })}
+                  onChange={(value) => {
+                    updatePreferences("accessibility", {
+                      ...preferences.accessibility,
+                      classicView: value,
+                    });
+                    // Sync with global accessibility provider
+                    updateSetting("classicView", value);
+                  }}
                   label="Classic 2D View"
                   description="Use a traditional flat interface"
                 />

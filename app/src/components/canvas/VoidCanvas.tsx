@@ -54,6 +54,9 @@ interface VoidCanvasProps {
   onSurfaceFromStream?: () => void;
   onWorkItemClick?: (itemId: string) => void;
   onWorkItemKindle?: (itemId: string) => void;
+  // Accessibility & Performance
+  reducedMotion?: boolean;
+  particleDensity?: number;
 }
 
 // Transform API stream data to component format
@@ -122,6 +125,8 @@ export function VoidCanvas({
   onSurfaceFromStream,
   onWorkItemClick,
   onWorkItemKindle,
+  reducedMotion = false,
+  particleDensity = 1.0,
 }: VoidCanvasProps) {
   const [connections] = useState(() => generateMockConnections(mockTeamPositions));
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
@@ -228,7 +233,11 @@ export function VoidCanvas({
           ) : (
             // Normal observatory view
             <>
-              <ParticleField count={500} />
+              <ParticleField 
+                count={500} 
+                reducedMotion={reducedMotion}
+                particleDensity={particleDensity}
+              />
 
               {/* Layer 0: Pulse Core (center) */}
               {showPulseCore && (

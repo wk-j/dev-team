@@ -1,22 +1,49 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface ParticleFieldProps {
   count?: number;
   spread?: number;
+  reducedMotion?: boolean;
+  particleDensity?: number; // 0.1 to 2.0 multiplier
 }
 
-export function ParticleField({ count = 500, spread = 100 }: ParticleFieldProps) {
+export function ParticleField({ 
+  count = 500, 
+  spread = 100,
+  reducedMotion = false,
+  particleDensity = 1.0,
+}: ParticleFieldProps) {
   const meshRef = useRef<THREE.Points>(null);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  
+  // Check for system reduced motion preference
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
+  
+  // Apply density multiplier to count (min 50, max 2000)
+  const actualCount = useMemo(() => {
+    return Math.max(50, Math.min(2000, Math.round(count * particleDensity)));
+  }, [count, particleDensity]);
+  
+  const shouldReduceMotion = reducedMotion || prefersReducedMotion;
 
   // Generate particle positions
   const particles = useMemo(() => {
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
+    const positions = new Float32Array(actualCount * 3);
+    const colors = new Float32Array(actualCount * 3);
+    const sizes = new Float32Array(actualCount);
 
     const colorPalette = [
       new THREE.Color("#00d4ff"), // Cyan
@@ -26,7 +53,7 @@ export function ParticleField({ count = 500, spread = 100 }: ParticleFieldProps)
       new THREE.Color("#ffffff"), // White
     ];
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < actualCount; i++) {
       // Random position in sphere
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
@@ -49,11 +76,11 @@ export function ParticleField({ count = 500, spread = 100 }: ParticleFieldProps)
     }
 
     return { positions, colors, sizes };
-  }, [count, spread]);
+  }, [actualCount, spread]);
 
-  // Animate particles
+  // Animate particles (skip if reduced motion)
   useFrame(({ clock }) => {
-    if (meshRef.current) {
+    if (meshRef.current && !shouldReduceMotion) {
       const t = clock.getElapsedTime();
       // Slow rotation
       meshRef.current.rotation.y = t * 0.02;

@@ -154,3 +154,141 @@ body {
   background: rgba(0, 212, 255, 0.3);
   color: var(--text-stellar);
 }
+
+/* ============================================
+   HIGH CONTRAST MODE
+   ============================================ */
+.high-contrast {
+  /* Override void colors with higher contrast */
+  --void-deep: #000000;
+  --void-nebula: #0a0a0a;
+  --void-atmosphere: #1a1a1a;
+  --void-surface: #2a2a2a;
+
+  /* Brighter energy states */
+  --energy-dormant: #808080;
+  --energy-kindling: #ff8844;
+  --energy-blazing: #ffff00;
+  --energy-cooling: #cc99ff;
+  --energy-crystallized: #00ffcc;
+
+  /* Higher contrast accent colors */
+  --accent-primary: #00ffff;
+  --accent-secondary: #ff99ff;
+  --accent-warning: #ff4444;
+  --accent-success: #44ff88;
+
+  /* Higher contrast text */
+  --text-stellar: #ffffff;
+  --text-bright: #f0f0f0;
+  --text-dim: #cccccc;
+  --text-muted: #999999;
+  --text-faded: #777777;
+}
+
+.high-contrast .glass-panel {
+  background: rgba(0, 0, 0, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.high-contrast *:focus-visible {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
+}
+
+/* ============================================
+   REDUCED MOTION MODE
+   ============================================ */
+.reduced-motion,
+.reduced-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+.reduced-motion .animate-pulse,
+.reduced-motion .animate-spin,
+.reduced-motion .animate-bounce {
+  animation: none !important;
+}
+
+/* ============================================
+   CLASSIC 2D VIEW MODE
+   ============================================ */
+.classic-view .canvas-container {
+  display: none !important;
+}
+
+.classic-view .classic-fallback {
+  display: block !important;
+}
+
+/* ============================================
+   KEYBOARD NAVIGATION
+   ============================================ */
+.keyboard-nav *:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.keyboard-nav button:focus,
+.keyboard-nav a:focus,
+.keyboard-nav input:focus,
+.keyboard-nav select:focus,
+.keyboard-nav textarea:focus {
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.4);
+}
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-primary);
+  color: var(--void-deep);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  z-index: 9999;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE UTILITIES
+   ============================================ */
+@media (max-width: 768px) {
+  .text-cosmic {
+    font-size: 2rem;
+  }
+  
+  .text-stellar {
+    font-size: 1.5rem;
+  }
+  
+  .text-nebula {
+    font-size: 1.25rem;
+  }
+  
+  .glass-panel {
+    border-radius: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-cosmic {
+    font-size: 1.75rem;
+  }
+  
+  .text-stellar {
+    font-size: 1.25rem;
+  }
+  
+  .hide-mobile {
+    display: none !important;
+  }
+}
