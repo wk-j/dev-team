@@ -3,9 +3,6 @@
 ## Concept
 Settings aren't a boring form page. The Sanctum is your **personal pocket dimension** — a private space where you customize your existence within the FlowState universe. It's a place of power and personalization.
 
-## Visual Reference
-![Settings Page Mockup](assets/settings_page_mockup.png)
-
 ---
 
 ## The Sanctum Environment

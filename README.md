@@ -88,30 +88,15 @@ src/
 
 ## Documentation
 
-### Design & Concept
-| Document | Description |
-|----------|-------------|
-| [Design Specification](docs/design_spec.md) | Visual language and core concepts |
-| [Design Consistency](docs/design_consistency.md) | Tokens, colors, typography, motion |
-| [Glossary](docs/glossary.md) | FlowState terminology reference |
+Full documentation available in [docs/README.md](docs/README.md)
 
-### Pages & Features
-| Document | Description |
-|----------|-------------|
-| [The Observatory](docs/dashboard_page.md) | Main dashboard (constellation view) |
-| [Energy Streams](docs/tasks_page.md) | Work management (stream metaphor) |
-| [Resonance Network](docs/team_page.md) | Team view (celestial bodies) |
-| [The Sanctum](docs/settings_page.md) | Personal settings |
-| [Onboarding Flow](docs/onboarding_flow.md) | First Contact experience |
-
-### Technical Implementation
-| Document | Description |
-|----------|-------------|
-| [Technology Stack](docs/technology_stack.md) | Full tech stack, configs, dependencies |
-| [Database Schema](docs/database_schema.md) | Drizzle schema & entity classes |
-| [Architecture Layers](docs/architecture_layers.md) | Repository & service patterns |
-| [API Reference](docs/api_reference.md) | REST endpoints & server actions |
-| [Implementation Plan](docs/implementation_plan.md) | Phases, roadmap, milestones |
+| Category | Documents |
+|----------|-----------|
+| **Overview** | [Implementation Plan](docs/01-overview/implementation_plan.md), [Tech Stack](docs/01-overview/technology_stack.md), [Glossary](docs/01-overview/glossary.md) |
+| **Design** | [Design Spec](docs/02-design/design_spec.md), [Design Tokens](docs/02-design/design_consistency.md), [Pages](docs/02-design/) |
+| **Architecture** | [Layers](docs/03-architecture/architecture_layers.md), [Database](docs/03-architecture/database_schema.md), [API](docs/03-architecture/api_reference.md) |
+| **Features** | [3D Canvas](docs/04-features/canvas_implementation.md), [Auth](docs/04-features/authentication.md), [Real-time](docs/04-features/realtime.md) |
+| **Operations** | [Deployment](docs/05-operations/deployment.md), [Testing](docs/05-operations/testing.md), [Monitoring](docs/05-operations/monitoring.md) |
 
 ## Key Features
 
@@ -226,9 +211,9 @@ GITHUB_CLIENT_SECRET="..."
 
 ## Contributing
 
-1. Read the [Implementation Plan](docs/implementation_plan.md)
-2. Check the [Glossary](docs/glossary.md) for terminology
-3. Follow patterns in [Architecture Layers](docs/architecture_layers.md)
+1. Read the [Implementation Plan](docs/01-overview/implementation_plan.md)
+2. Check the [Glossary](docs/01-overview/glossary.md) for terminology
+3. Follow patterns in [Architecture Layers](docs/03-architecture/architecture_layers.md)
 4. Ensure types are strict (no `any`)
 5. Write tests for services
 

@@ -423,15 +423,6 @@ const bloomParams = {
 
 ## 9. Asset Specifications
 
-### Placeholder Images (Current Mockups)
-Located in `assets/`:
-- `dashboard_mockup.png` — Observatory view
-- `team_page_mockup.png` — Resonance network
-- `tasks_page_mockup.png` — Stream view
-- `settings_page_mockup.png` — Sanctum
-- `color_palette.png` — Color reference
-- `typography_scale.png` — Type specimens
-
 ### Icon Style
 - Style: Outlined, 1.5px stroke
 - Size: 20x20 default, 24x24 for emphasis

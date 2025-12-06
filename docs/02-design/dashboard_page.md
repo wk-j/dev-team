@@ -3,9 +3,6 @@
 ## Concept
 The Observatory is not a "dashboard" — it's a **living viewport into the team's collective consciousness**. Users observe their team's energy from a cosmic vantage point, watching work flow like celestial bodies in motion.
 
-## Visual Reference
-![Dashboard Mockup](assets/dashboard_mockup.png)
-
 ---
 
 ## The Void Canvas

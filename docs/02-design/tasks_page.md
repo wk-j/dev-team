@@ -3,9 +3,6 @@
 ## Concept
 Work doesn't live in columns or lists. Work **flows through streams** — continuous rivers of effort that team members dive into. Each stream has its own current, depth, and ecosystem of work items moving through it.
 
-## Visual Reference
-![Tasks Page Mockup](assets/tasks_page_mockup.png)
-
 ---
 
 ## The Stream Metaphor

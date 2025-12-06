@@ -3,9 +3,6 @@
 ## Concept
 The Resonance Network abandons the "employee directory" model. Instead, team members exist as **celestial bodies in a living solar system**, with relationships visualized as gravitational forces, orbital patterns, and energy exchanges.
 
-## Visual Reference
-![Team Page Mockup](assets/team_page_mockup.png)
-
 ---
 
 ## The Solar System Model
