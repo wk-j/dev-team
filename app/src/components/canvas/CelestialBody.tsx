@@ -55,26 +55,38 @@ export function CelestialBody({
   const config = starConfig[starType];
   const orbital = orbitalConfig[orbitalState];
 
-  // Animation frame
+  // Animation frame - pause animations when hovered for readability
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
     if (meshRef.current) {
-      // Breathing effect
-      const breathe = 1 + Math.sin(t * orbital.pulseSpeed) * 0.05;
-      meshRef.current.scale.setScalar(config.scale * breathe * (hovered ? 1.2 : 1));
+      if (hovered) {
+        // Static enlarged scale when hovered
+        meshRef.current.scale.setScalar(config.scale * 1.15);
+      } else {
+        // Breathing effect when not hovered
+        const breathe = 1 + Math.sin(t * orbital.pulseSpeed) * 0.05;
+        meshRef.current.scale.setScalar(config.scale * breathe);
+      }
     }
 
     if (ringRef.current) {
-      // Ring rotation
-      ringRef.current.rotation.z = t * 0.5;
-      ringRef.current.rotation.x = Math.PI / 2 + Math.sin(t * 0.3) * 0.1;
+      if (!hovered) {
+        // Ring rotation only when not hovered
+        ringRef.current.rotation.z = t * 0.5;
+        ringRef.current.rotation.x = Math.PI / 2 + Math.sin(t * 0.3) * 0.1;
+      }
     }
 
     if (glowRef.current) {
-      // Glow pulsing
-      const glowScale = config.scale * 2 * (1 + Math.sin(t * orbital.pulseSpeed * 0.5) * 0.1);
-      glowRef.current.scale.setScalar(glowScale);
+      if (hovered) {
+        // Static glow when hovered
+        glowRef.current.scale.setScalar(config.scale * 2.2);
+      } else {
+        // Glow pulsing when not hovered
+        const glowScale = config.scale * 2 * (1 + Math.sin(t * orbital.pulseSpeed * 0.5) * 0.1);
+        glowRef.current.scale.setScalar(glowScale);
+      }
     }
   });
 
@@ -129,16 +141,24 @@ export function CelestialBody({
 
       {/* Hover tooltip */}
       {hovered && (
-        <Html distanceFactor={15} position={[0, config.scale * 2, 0]}>
-          <div className="glass-panel px-3 py-2 text-center whitespace-nowrap pointer-events-none">
-            <div className="text-moon text-text-bright font-medium">{name}</div>
-            <div className="text-dust text-text-muted">{role}</div>
-            <div className="text-dust mt-1">
+        <Html 
+          position={[0, config.scale * 2.5, 0]} 
+          center
+          style={{ 
+            pointerEvents: "none",
+            transform: "translate(-50%, -100%)",
+          }}
+          zIndexRange={[1000, 1100]}
+        >
+          <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 text-center whitespace-nowrap shadow-2xl min-w-[160px]">
+            <div className="text-base font-semibold text-text-bright">{name}</div>
+            <div className="text-sm text-text-muted mt-1">{role}</div>
+            <div className="text-sm mt-3 flex items-center justify-center gap-2 pt-2 border-t border-void-atmosphere">
               <span
-                className="inline-block w-2 h-2 rounded-full mr-1"
-                style={{ backgroundColor: color }}
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
               />
-              {orbitalState.replace("_", " ")}
+              <span className="text-text-dim capitalize">{orbitalState.replace("_", " ")}</span>
             </div>
           </div>
         </Html>

@@ -2,7 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { Suspense, useState, useMemo } from "react";
-import { VoidEnvironment } from "./VoidEnvironment";
+import { VoidEnvironment, getTimeOfDayFromHour, getWeatherFromTeamHealth } from "./VoidEnvironment";
 import { CameraController } from "./CameraController";
 import { ParticleField } from "./ParticleField";
 import { ConstellationView } from "./ConstellationView";
@@ -11,6 +11,8 @@ import { ResonanceConnections, generateMockConnections } from "./ResonanceConnec
 import { StreamsView, mockStreams, type StreamState } from "./Stream";
 import { WorkItemsView, mockWorkItems, type EnergyState, type WorkItemDepth } from "./EnergyOrb";
 import { DiveMode } from "./DiveMode";
+import { PulseCore, calculateTeamMetrics } from "./PulseCore";
+import { CrystalGarden, createMockCrystals } from "./CrystalGarden";
 import type { Stream, WorkItem, StreamDiver } from "@/lib/api/client";
 
 // Mock team member positions for generating connections
@@ -38,9 +40,13 @@ interface VoidCanvasProps {
   showStreams?: boolean;
   showWorkItems?: boolean;
   showConnections?: boolean;
+  showPulseCore?: boolean;
+  showCrystalGarden?: boolean;
   // Real data from API
   streams?: Stream[];
   workItems?: WorkItem[];
+  // Team data
+  teamMemberCount?: number;
   // Dive mode
   diveMode?: DiveModeState | null;
   currentUserId?: string;
@@ -105,8 +111,11 @@ export function VoidCanvas({
   showStreams = true,
   showWorkItems = true,
   showConnections = true,
+  showPulseCore = true,
+  showCrystalGarden = true,
   streams: apiStreams,
   workItems: apiWorkItems,
+  teamMemberCount = 6,
   diveMode,
   currentUserId,
   onDiveIntoStream,
@@ -120,6 +129,44 @@ export function VoidCanvas({
   // Transform API data to component format, memoized
   const streams = useMemo(() => transformStreams(apiStreams), [apiStreams]);
   const workItems = useMemo(() => transformWorkItems(apiWorkItems), [apiWorkItems]);
+
+  // Calculate team metrics for PulseCore
+  const teamMetrics = useMemo(() => {
+    return calculateTeamMetrics(workItems, teamMemberCount);
+  }, [workItems, teamMemberCount]);
+
+  // Create crystals from completed work items
+  const crystals = useMemo(() => {
+    const crystallizedItems = workItems.filter(item => item.energyState === "crystallized");
+    if (crystallizedItems.length === 0) {
+      // Use mock crystals for demo
+      return createMockCrystals(8);
+    }
+    return crystallizedItems.map(item => ({
+      id: item.id,
+      title: item.title,
+      completedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
+      energyLevel: 70 + Math.random() * 30,
+      depth: item.depth as "shallow" | "medium" | "deep" | "abyssal",
+      contributor: item.assignee,
+    }));
+  }, [workItems]);
+
+  // Time-based ambient lighting
+  const timeOfDay = useMemo(() => getTimeOfDayFromHour(), []);
+
+  // Weather based on team health
+  const weatherState = useMemo(() => {
+    const activeItems = workItems.filter(
+      item => item.energyState === "kindling" || item.energyState === "blazing"
+    ).length;
+    const activeRatio = workItems.length > 0 ? activeItems / workItems.length : 0;
+    return getWeatherFromTeamHealth(
+      teamMetrics.energyLevel,
+      teamMetrics.harmonyScore,
+      activeRatio
+    );
+  }, [workItems, teamMetrics]);
 
   // Handle stream click for diving
   const handleStreamClick = (streamId: string) => {
@@ -142,7 +189,11 @@ export function VoidCanvas({
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={null}>
-          <VoidEnvironment />
+          <VoidEnvironment 
+            timeOfDay={timeOfDay}
+            weatherState={weatherState}
+            energyLevel={teamMetrics.energyLevel}
+          />
           <CameraController />
           
           {isInDiveMode ? (
@@ -179,6 +230,19 @@ export function VoidCanvas({
             <>
               <ParticleField count={500} />
 
+              {/* Layer 0: Pulse Core (center) */}
+              {showPulseCore && (
+                <PulseCore
+                  position={[0, 0, -10]}
+                  energyLevel={teamMetrics.energyLevel}
+                  activeMembers={teamMetrics.activeMembers}
+                  totalMembers={teamMetrics.totalMembers}
+                  activeWorkItems={teamMetrics.activeWorkItems}
+                  completedToday={teamMetrics.completedToday}
+                  harmonyScore={teamMetrics.harmonyScore}
+                />
+              )}
+
               {/* Layer 1: Streams (background) */}
               {showStreams && (
                 <StreamsView 
@@ -190,10 +254,19 @@ export function VoidCanvas({
               {/* Layer 2: Work Items */}
               {showWorkItems && <WorkItemsView items={workItems} />}
 
-              {/* Layer 3: Connections between team members */}
+              {/* Layer 3: Crystal Garden (completed work) */}
+              {showCrystalGarden && crystals.length > 0 && (
+                <CrystalGarden
+                  crystals={crystals}
+                  position={[25, -5, -15]}
+                  radius={8}
+                />
+              )}
+
+              {/* Layer 4: Connections between team members */}
               {showConnections && <ResonanceConnections connections={connections} />}
 
-              {/* Layer 4: Team members (foreground) */}
+              {/* Layer 5: Team members (foreground) */}
               <ConstellationView />
             </>
           )}

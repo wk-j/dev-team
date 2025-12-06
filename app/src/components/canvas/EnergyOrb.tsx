@@ -392,21 +392,26 @@ export function EnergyOrb({
 
       {/* Hover tooltip */}
       {hovered && (
-        <Html distanceFactor={15} position={[0, scale * 2, 0]}>
-          <div className="glass-panel px-3 py-2 text-center whitespace-nowrap pointer-events-none max-w-[200px]">
-            <div className="text-moon text-text-bright font-medium truncate">
+        <Html 
+          position={[0, scale * 3, 0]} 
+          center
+          style={{ pointerEvents: "none" }}
+          zIndexRange={[1000, 1100]}
+        >
+          <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 text-center whitespace-nowrap pointer-events-none shadow-2xl min-w-[180px]">
+            <div className="text-base font-semibold text-text-bright truncate max-w-[200px]">
               {title}
             </div>
-            <div className="text-dust text-text-muted flex items-center justify-center gap-2 mt-1">
+            <div className="text-sm text-text-muted flex items-center justify-center gap-2 mt-2">
               <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: config.color }}
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: config.color, boxShadow: `0 0 8px ${config.color}` }}
               />
               {energyState.charAt(0).toUpperCase() + energyState.slice(1)}
               {energyState === "crystallized" && " ✨"}
             </div>
             {assignee && (
-              <div className="text-dust text-text-dim mt-1">
+              <div className="text-sm text-text-dim mt-3 pt-3 border-t border-void-atmosphere">
                 {assignee}
               </div>
             )}

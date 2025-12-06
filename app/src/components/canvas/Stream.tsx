@@ -121,24 +121,28 @@ function StreamHealthIndicator({
 
       {/* Info tooltip on hover */}
       {isHovered && (
-        <Html center distanceFactor={15}>
-          <div className="bg-void-deep/90 backdrop-blur-sm border border-void-atmosphere rounded-lg px-3 py-2 pointer-events-none min-w-[140px]">
-            <div className="text-sm font-medium text-text-bright mb-1">{name}</div>
-            <div className="flex items-center gap-2 text-xs">
+        <Html 
+          center 
+          style={{ pointerEvents: "none" }}
+          zIndexRange={[1000, 1100]}
+        >
+          <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 pointer-events-none min-w-[180px] shadow-2xl">
+            <div className="text-base font-semibold text-text-bright mb-2">{name}</div>
+            <div className="flex items-center gap-2 text-sm">
               <span 
-                className="w-2 h-2 rounded-full" 
-                style={{ backgroundColor: config.healthColor }}
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: config.healthColor, boxShadow: `0 0 8px ${config.healthColor}` }}
               />
               <span className="text-text-muted">{config.healthLabel}</span>
             </div>
-            <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
-              <div className="text-text-dim">
-                <span className="text-text-muted">Items: </span>
-                {itemCount}
+            <div className="mt-3 pt-3 border-t border-void-atmosphere grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="text-text-bright font-medium">{itemCount}</div>
+                <div className="text-text-dim text-xs">Items</div>
               </div>
-              <div className="text-text-dim">
-                <span className="text-text-muted">Done: </span>
-                {crystalCount}
+              <div>
+                <div className="text-energy-crystallized font-medium">{crystalCount}</div>
+                <div className="text-text-dim text-xs">Done</div>
               </div>
             </div>
           </div>
