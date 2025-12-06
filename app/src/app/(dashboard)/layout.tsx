@@ -7,6 +7,7 @@ const navItems = [
   { href: "/observatory", label: "Observatory", icon: "🔭" },
   { href: "/streams", label: "Streams", icon: "🌊" },
   { href: "/constellation", label: "Constellation", icon: "✨" },
+  { href: "/team", label: "Team", icon: "👥" },
   { href: "/sanctum", label: "Sanctum", icon: "⚙️" },
 ];
 

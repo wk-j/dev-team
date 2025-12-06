@@ -177,6 +177,41 @@ export const teamMemberships = pgTable(
 );
 
 // ============================================================================
+// TEAM INVITES TABLE
+// ============================================================================
+
+export const teamInvites = pgTable(
+  "team_invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    teamId: uuid("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    
+    email: varchar("email", { length: 255 }).notNull(),
+    role: varchar("role", { length: 50 }).notNull().default("member"),
+    
+    invitedById: uuid("invited_by_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    
+    token: varchar("token", { length: 64 }).notNull().unique(),
+    
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("team_invites_team_idx").on(table.teamId),
+    index("team_invites_email_idx").on(table.email),
+    uniqueIndex("team_invites_token_idx").on(table.token),
+  ]
+);
+
+// ============================================================================
 // STREAMS TABLE
 // ============================================================================
 
@@ -509,6 +544,10 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Team = typeof teams.$inferSelect;
 export type NewTeam = typeof teams.$inferInsert;
+export type TeamMembership = typeof teamMemberships.$inferSelect;
+export type NewTeamMembership = typeof teamMemberships.$inferInsert;
+export type TeamInvite = typeof teamInvites.$inferSelect;
+export type NewTeamInvite = typeof teamInvites.$inferInsert;
 export type Stream = typeof streams.$inferSelect;
 export type NewStream = typeof streams.$inferInsert;
 export type WorkItem = typeof workItems.$inferSelect;
