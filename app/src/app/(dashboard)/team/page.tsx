@@ -51,6 +51,8 @@ export default function TeamPage() {
   // Modal states
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showInviteLinkModal, setShowInviteLinkModal] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [editName, setEditName] = useState("");
@@ -115,9 +117,11 @@ export default function TeamPage() {
       }
       
       const data = await res.json();
-      alert(`Invite sent! Share this link: ${window.location.origin}${data.inviteLink}`);
+      const fullLink = `${window.location.origin}${data.inviteLink}`;
+      setInviteLink(fullLink);
       setInviteEmail("");
       setShowInviteModal(false);
+      setShowInviteLinkModal(true);
       fetchInvites();
     } catch {
       alert("Failed to send invite");
@@ -337,36 +341,42 @@ export default function TeamPage() {
         </div>
 
         {/* Pending Invites */}
-        {canManage && invites.length > 0 && (
+        {canManage && (
           <div className="glass-panel p-6 rounded-xl">
             <h2 className="text-lg font-semibold text-text-bright mb-4">
               Pending Invites ({invites.length})
             </h2>
             
-            <div className="space-y-3">
-              {invites.map((invite) => (
-                <div
-                  key={invite.id}
-                  className="flex items-center justify-between p-4 bg-void-deep/50 rounded-lg"
-                >
-                  <div>
-                    <div className="text-text-bright">{invite.email}</div>
-                    <div className="text-sm text-text-muted">
-                      Invited as {invite.role} by {invite.invitedBy.name}
-                    </div>
-                    <div className="text-xs text-text-dim">
-                      Expires {new Date(invite.expiresAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleCancelInvite(invite.id)}
-                    className="px-3 py-1 text-sm border border-void-atmosphere rounded text-text-muted hover:text-accent-warning hover:border-accent-warning transition-colors"
+            {invites.length > 0 ? (
+              <div className="space-y-3">
+                {invites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className="flex items-center justify-between p-4 bg-void-deep/50 rounded-lg"
                   >
-                    Cancel
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div>
+                      <div className="text-text-bright">{invite.email}</div>
+                      <div className="text-sm text-text-muted">
+                        Invited as {invite.role} by {invite.invitedBy.name}
+                      </div>
+                      <div className="text-xs text-text-dim">
+                        Expires {new Date(invite.expiresAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCancelInvite(invite.id)}
+                      className="px-3 py-1 text-sm border border-void-atmosphere rounded text-text-muted hover:text-accent-warning hover:border-accent-warning transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-text-muted text-sm">
+                No pending invites. Click "+ Invite" to invite team members.
+              </p>
+            )}
           </div>
         )}
 
@@ -476,6 +486,45 @@ export default function TeamPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Invite Link Modal */}
+        {showInviteLinkModal && (
+          <div className="fixed inset-0 bg-void-deep/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-panel p-6 rounded-xl w-full max-w-md">
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">✉️</div>
+                <h2 className="text-xl font-semibold text-text-bright">
+                  Invite Sent!
+                </h2>
+              </div>
+              <p className="text-text-muted text-sm mb-4 text-center">
+                Share this link with your teammate:
+              </p>
+              <div className="bg-void-deep p-3 rounded-lg mb-4">
+                <code className="text-accent-primary text-sm break-all">
+                  {inviteLink}
+                </code>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(inviteLink);
+                    alert("Link copied to clipboard!");
+                  }}
+                  className="flex-1 px-4 py-2 bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors"
+                >
+                  Copy Link
+                </button>
+                <button
+                  onClick={() => setShowInviteLinkModal(false)}
+                  className="flex-1 px-4 py-2 border border-void-atmosphere rounded-lg text-text-muted hover:text-text-bright transition-colors"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}
