@@ -1,10 +1,9 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, teams, teamMemberships } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { redirect } from "next/navigation";
 
 export interface RegisterState {
     error?: string;
@@ -63,7 +62,7 @@ export async function registerUser(
             energyColors[Math.floor(Math.random() * energyColors.length)];
 
         // Create user
-        await db.insert(users).values({
+        const [newUser] = await db.insert(users).values({
             name: name.trim(),
             email: email.toLowerCase(),
             passwordHash,
@@ -74,6 +73,19 @@ export async function registerUser(
             starType: "main_sequence",
             orbitalState: "open",
             currentEnergyLevel: 100,
+        }).returning();
+
+        // Create a personal team for the user
+        const [newTeam] = await db.insert(teams).values({
+            name: `${name.trim()}'s Space`,
+            description: "Your personal workspace in the void",
+        }).returning();
+
+        // Add user as team owner
+        await db.insert(teamMemberships).values({
+            userId: newUser!.id,
+            teamId: newTeam!.id,
+            role: "owner",
         });
 
         return { success: true };

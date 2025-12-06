@@ -23,7 +23,7 @@ export async function GET() {
     }
 
     // Get team info
-    const membership = await db
+    let membership = await db
       .select({
         teamId: teamMemberships.teamId,
         role: teamMemberships.role,
@@ -33,6 +33,26 @@ export async function GET() {
       .innerJoin(teams, eq(teamMemberships.teamId, teams.id))
       .where(eq(teamMemberships.userId, session.user.id))
       .limit(1);
+
+    // Auto-create a team for users without one
+    if (membership.length === 0) {
+      const [newTeam] = await db.insert(teams).values({
+        name: `${user.name}'s Space`,
+        description: "Your personal workspace in the void",
+      }).returning();
+
+      await db.insert(teamMemberships).values({
+        userId: user.id,
+        teamId: newTeam!.id,
+        role: "owner",
+      });
+
+      membership = [{
+        teamId: newTeam!.id,
+        role: "owner",
+        teamName: newTeam!.name,
+      }];
+    }
 
     // Don't return password hash
     const { passwordHash, ...safeUser } = user;
