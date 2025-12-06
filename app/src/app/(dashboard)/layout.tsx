@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 
 const navItems = [
   { href: "/observatory", label: "Observatory", icon: "🔭" },
@@ -73,7 +74,7 @@ export default function DashboardLayout({
             </button>
 
             {/* User Menu - Desktop */}
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2">
               <Link
                 href="/sanctum"
                 className="w-8 h-8 rounded-full bg-accent-primary/20 border border-accent-primary/50 flex items-center justify-center text-accent-primary hover:bg-accent-primary/30 transition-colors"
@@ -81,6 +82,13 @@ export default function DashboardLayout({
               >
                 <span aria-hidden="true">U</span>
               </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="px-3 py-1.5 text-sm text-text-muted hover:text-text-bright hover:bg-void-atmosphere/50 rounded-lg transition-colors"
+                aria-label="Sign out"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
@@ -103,7 +111,7 @@ export default function DashboardLayout({
                   <span>{item.label}</span>
                 </Link>
               ))}
-              <div className="border-t border-void-atmosphere/50 pt-3 mt-3">
+              <div className="border-t border-void-atmosphere/50 pt-3 mt-3 space-y-1">
                 <Link
                   href="/sanctum"
                   className="flex items-center gap-3 px-3 py-3 rounded-lg text-moon text-text-dim hover:text-text-bright hover:bg-void-atmosphere/50 transition-colors"
@@ -114,6 +122,16 @@ export default function DashboardLayout({
                   </span>
                   <span>Profile Settings</span>
                 </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    signOut({ callbackUrl: "/login" });
+                  }}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-moon text-accent-warning hover:bg-void-atmosphere/50 transition-colors w-full"
+                >
+                  <span aria-hidden="true">🚪</span>
+                  <span>Logout</span>
+                </button>
               </div>
             </div>
           </div>
