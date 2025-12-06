@@ -28,6 +28,18 @@ interface TeamInvite {
   };
 }
 
+interface IncomingInvite {
+  id: string;
+  token: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  expiresAt: string;
+  teamId: string;
+  teamName: string;
+  invitedByName: string;
+}
+
 interface Team {
   id: string;
   name: string;
@@ -45,8 +57,10 @@ const roleColors: Record<string, { bg: string; text: string }> = {
 export default function TeamPage() {
   const [team, setTeam] = useState<Team | null>(null);
   const [invites, setInvites] = useState<TeamInvite[]>([]);
+  const [incomingInvites, setIncomingInvites] = useState<IncomingInvite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAcceptingInvite, setIsAcceptingInvite] = useState<string | null>(null);
   
   // Modal states
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -93,10 +107,47 @@ export default function TeamPage() {
     }
   }, []);
 
+  const fetchIncomingInvites = useCallback(async () => {
+    try {
+      const res = await fetch("/api/me/invites");
+      if (res.ok) {
+        const data = await res.json();
+        setIncomingInvites(data);
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, []);
+
+  const handleAcceptInvite = async (token: string) => {
+    setIsAcceptingInvite(token);
+    try {
+      const res = await fetch("/api/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to accept invite");
+        return;
+      }
+
+      // Refresh the page to show new team
+      window.location.reload();
+    } catch {
+      alert("Failed to accept invite");
+    } finally {
+      setIsAcceptingInvite(null);
+    }
+  };
+
   useEffect(() => {
     fetchTeam();
     fetchInvites();
-  }, [fetchTeam, fetchInvites]);
+    fetchIncomingInvites();
+  }, [fetchTeam, fetchInvites, fetchIncomingInvites]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,6 +291,41 @@ export default function TeamPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Incoming Invites Banner */}
+        {incomingInvites.length > 0 && (
+          <div className="mb-6 space-y-3">
+            {incomingInvites.map((invite) => (
+              <div
+                key={invite.id}
+                className="glass-panel p-4 rounded-xl border-2 border-accent-primary/50 bg-accent-primary/5"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xl">✉️</span>
+                      <span className="font-semibold text-text-bright">
+                        You're invited to join {invite.teamName}
+                      </span>
+                    </div>
+                    <p className="text-sm text-text-muted">
+                      {invite.invitedByName} invited you as {invite.role}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAcceptInvite(invite.token)}
+                      disabled={isAcceptingInvite === invite.token}
+                      className="px-4 py-2 bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {isAcceptingInvite === invite.token ? "Joining..." : "Accept"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>

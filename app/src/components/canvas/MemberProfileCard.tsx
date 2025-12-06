@@ -23,9 +23,10 @@ interface MemberProfileCardProps {
   onClose: () => void;
   onPing?: () => void;
   onViewProfile?: () => void;
+  onInfuseEnergy?: () => void;
 }
 
-export function MemberProfileCard({ member, onClose, onPing, onViewProfile }: MemberProfileCardProps) {
+export function MemberProfileCard({ member, onClose, onPing, onViewProfile, onInfuseEnergy }: MemberProfileCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const starTypeLabels: Record<StarType, string> = {
@@ -157,19 +158,34 @@ export function MemberProfileCard({ member, onClose, onPing, onViewProfile }: Me
         )}
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             className="flex-1 py-2 px-4 bg-accent-primary/20 border border-accent-primary text-accent-primary rounded-lg hover:bg-accent-primary/30 transition-colors"
             onClick={onPing}
           >
             📡 Send Ping
           </button>
-          <button
-            className="flex-1 py-2 px-4 bg-void-surface border border-void-atmosphere text-text-bright rounded-lg hover:bg-void-atmosphere transition-colors"
-            onClick={onViewProfile}
-          >
-            View Profile
-          </button>
+          {onInfuseEnergy && (
+            <button
+              className="flex-1 py-2 px-4 border rounded-lg transition-colors hover:shadow-lg"
+              style={{
+                backgroundColor: `${member.energySignatureColor}20`,
+                borderColor: member.energySignatureColor,
+                color: member.energySignatureColor,
+              }}
+              onClick={onInfuseEnergy}
+            >
+              ⚡ Infuse Energy
+            </button>
+          )}
+          {onViewProfile && (
+            <button
+              className="flex-1 py-2 px-4 bg-void-surface border border-void-atmosphere text-text-bright rounded-lg hover:bg-void-atmosphere transition-colors"
+              onClick={onViewProfile}
+            >
+              View Profile
+            </button>
+          )}
         </div>
       </div>
     </div>
