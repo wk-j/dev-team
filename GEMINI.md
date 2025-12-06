@@ -1,23 +1,34 @@
-# Dev Team Task Tracker
+# FlowState: Team Energy Tracker
 
 ## Project Goal
-Build a modern, premium web application for tracking development team member tasks. The app will allow visualizing tasks, assigning them to team members, and tracking progress with a high-end, dynamic user interface.
+**FlowState** is a revolutionary "Living Workspace" that replaces traditional task lists with a biological, energy-based system. It visualizes team activity as a starry constellation and work items as living energy entities, fostering flow and connection over mechanical productivity.
 
 ## Tech Stack
 - **Framework**: React (Vite)
 - **Styling**: TailwindCSS
+- **Visuals**: WebGL / Three.js (The Void)
+- **Animation**: Framer Motion & GSAP
 - **Icons**: Lucide React
-- **Animation**: Framer Motion
 
 ## Design Guidelines
-- **Theme**: Premium Dark Mode
-- **Background**: Deep Slate/Zinc (`#0f172a` - `#1e293b`)
-- **Accents**: Electric Blue & Purple Gradients
-- **Style**: Glassmorphism, Clean Typography (Inter)
+- **Theme**: Bioluminescent Deep Space
+- **Background**: Deep Space / Nebula (`#05080f` - `#0a1628`)
+- **Accents**: Electric Cyan & Organic Glows
+- **Typography**: Space Grotesk (Titles), IBM Plex Sans (UI)
 
 ## Documentation
-- [Design Specification](docs/design_spec.md)
-- [Implementation Plan](docs/implementation_plan.md)
+- [Documentation Overview](docs/README.md)
+- [Design Specification](docs/02-design/design_spec.md)
+- [Implementation Plan](docs/01-overview/implementation_plan.md)
+
+## Key Concepts
+| Traditional | FlowState |
+|-------------|-----------|
+| Tasks | Energy entities |
+| Projects | Momentum streams |
+| Team Page | Resonance network |
+| Assigning | Energy infusion |
+| Dashboard | The Observatory |
 
 ## Current Status
 - Design phase complete.

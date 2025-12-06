@@ -31,6 +31,8 @@ docs/
 |----------|-------------|
 | [Design Spec](02-design/design_spec.md) | Core design philosophy and visual language |
 | [Design Consistency](02-design/design_consistency.md) | Colors, typography, components |
+| [Landing Page](02-design/landing_page.md) | Public homepage |
+| [Auth Pages](02-design/auth_pages.md) | Login, register, password reset |
 | [Dashboard (Observatory)](02-design/dashboard_page.md) | Main dashboard design |
 | [Tasks (Streams)](02-design/tasks_page.md) | Work streams and items |
 | [Team (Constellation)](02-design/team_page.md) | Team visualization |
