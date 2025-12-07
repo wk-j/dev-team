@@ -31,9 +31,9 @@ function ActivityWaveform({ intensity = 0.5, color = "#00d4ff", className = "" }
   color?: string;
   className?: string;
 }) {
-  const bars = 12;
+  const bars = 8;
   return (
-    <div className={`flex items-center gap-0.5 h-6 ${className}`}>
+    <div className={`flex items-center gap-px h-4 ${className}`}>
       {Array.from({ length: bars }).map((_, i) => {
         const baseHeight = 0.3 + Math.sin((i / bars) * Math.PI) * 0.4;
         const animDelay = i * 0.08;
@@ -41,10 +41,10 @@ function ActivityWaveform({ intensity = 0.5, color = "#00d4ff", className = "" }
         return (
           <div
             key={i}
-            className="w-1 rounded-full animate-pulse"
+            className="w-0.5 rounded-full animate-pulse"
             style={{
               backgroundColor: color,
-              height: `${Math.max(15, height * 100)}%`,
+              height: `${Math.max(20, height * 100)}%`,
               animationDelay: `${animDelay}s`,
               animationDuration: `${0.8 + Math.random() * 0.4}s`,
               opacity: 0.6 + intensity * 0.4,
@@ -111,7 +111,7 @@ function StateBadge({ state, className = "" }: { state: string; className?: stri
   );
 }
 
-// Work item card for the sidebar
+// Work item card for the sidebar - compact version
 function WorkItemCard({ 
   item, 
   isSelected,
@@ -135,53 +135,26 @@ function WorkItemCard({
   return (
     <div
       onClick={onClick}
-      className={`group relative p-3 rounded-lg border transition-all cursor-pointer ${
+      className={`group relative px-2.5 py-2 rounded-lg border transition-all cursor-pointer ${
         isSelected
           ? "bg-accent-primary/10 border-accent-primary/50"
-          : "bg-void-surface/50 border-void-atmosphere hover:border-void-surface hover:bg-void-surface/80"
+          : "bg-void-surface/40 border-transparent hover:border-void-atmosphere hover:bg-void-surface/60"
       }`}
     >
       {/* Energy indicator */}
       <div 
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"
+        className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-lg"
         style={{ backgroundColor: color }}
       />
       
-      <div className="pl-2">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h4 className="text-sm font-medium text-text-bright leading-tight line-clamp-1">
+      <div className="pl-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <h4 className="text-xs font-medium text-text-bright leading-tight line-clamp-1 flex-1">
             {item.title}
           </h4>
-          <span 
-            className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
-            style={{ backgroundColor: color }}
-          />
-        </div>
-        
-        {item.description && (
-          <p className="text-xs text-text-dim line-clamp-1 mb-2">{item.description}</p>
-        )}
-        
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted capitalize">
-            {item.energyState}
+          <span className="text-[9px] uppercase text-text-muted capitalize flex-shrink-0">
+            {item.energyState === "crystallized" ? "done" : item.energyState}
           </span>
-          <div className="flex items-center gap-1">
-            {item.contributors?.slice(0, 3).map((c, i) => (
-              <div
-                key={c.id}
-                className="w-5 h-5 rounded-full border border-void-atmosphere flex items-center justify-center text-[10px] font-medium"
-                style={{ 
-                  backgroundColor: c.energySignatureColor + "30",
-                  marginLeft: i > 0 ? "-6px" : 0,
-                  zIndex: 3 - i,
-                }}
-                title={c.name}
-              >
-                {c.name.charAt(0)}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
@@ -489,7 +462,7 @@ function WorkItemDetailPanel({
   );
 }
 
-// Filter Dropdown
+// Filter Dropdown - compact
 function FilterDropdown({
   value,
   onChange,
@@ -502,32 +475,32 @@ function FilterDropdown({
   onToggle: () => void;
 }) {
   const options: { value: EnergyStateFilter; label: string; color: string }[] = [
-    { value: "all", label: "All States", color: "#00d4ff" },
+    { value: "all", label: "All", color: "#00d4ff" },
     { value: "blazing", label: "Blazing", color: "#fbbf24" },
     { value: "kindling", label: "Kindling", color: "#f97316" },
     { value: "cooling", label: "Cooling", color: "#a78bfa" },
     { value: "dormant", label: "Dormant", color: "#6b7280" },
-    { value: "crystallized", label: "Crystallized", color: "#06b6d4" },
+    { value: "crystallized", label: "Done", color: "#06b6d4" },
   ];
 
   return (
     <div className="relative">
       <button
         onClick={onToggle}
-        className={`p-2 rounded-lg transition-colors ${
+        className={`p-1.5 rounded-lg transition-colors ${
           value !== "all"
             ? "bg-accent-primary/20 text-accent-primary"
             : "bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright"
         }`}
         title="Filter"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
         </svg>
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-48 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute top-full left-0 mt-1 w-36 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-lg shadow-2xl overflow-hidden z-50">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -535,13 +508,13 @@ function FilterDropdown({
                 onChange(opt.value);
                 onToggle();
               }}
-              className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+              className={`w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 transition-colors ${
                 value === opt.value
                   ? "bg-accent-primary/10 text-accent-primary"
                   : "text-text-muted hover:text-text-bright hover:bg-void-surface/50"
               }`}
             >
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: opt.color }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: opt.color }} />
               {opt.label}
             </button>
           ))}
@@ -551,7 +524,7 @@ function FilterDropdown({
   );
 }
 
-// Sort Dropdown
+// Sort Dropdown - compact
 function SortDropdown({
   value,
   onChange,
@@ -564,9 +537,9 @@ function SortDropdown({
   onToggle: () => void;
 }) {
   const options: { value: SortOption; label: string }[] = [
-    { value: "position", label: "Stream Position" },
-    { value: "state", label: "Energy State" },
-    { value: "recent", label: "Recently Updated" },
+    { value: "position", label: "Position" },
+    { value: "state", label: "State" },
+    { value: "recent", label: "Recent" },
     { value: "name", label: "Name" },
   ];
 
@@ -574,20 +547,20 @@ function SortDropdown({
     <div className="relative">
       <button
         onClick={onToggle}
-        className={`p-2 rounded-lg transition-colors ${
+        className={`p-1.5 rounded-lg transition-colors ${
           value !== "position"
             ? "bg-accent-primary/20 text-accent-primary"
             : "bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright"
         }`}
         title="Sort"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-48 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute top-full left-0 mt-1 w-28 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-lg shadow-2xl overflow-hidden z-50">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -595,7 +568,7 @@ function SortDropdown({
                 onChange(opt.value);
                 onToggle();
               }}
-              className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+              className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
                 value === opt.value
                   ? "bg-accent-primary/10 text-accent-primary"
                   : "text-text-muted hover:text-text-bright hover:bg-void-surface/50"
@@ -870,197 +843,55 @@ export default function StreamDetailPage() {
         />
       </div>
 
-      {/* Enhanced Header Overlay */}
-      <div className="absolute top-4 left-4 right-4 z-20">
-        <div className="bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-2xl p-4 shadow-2xl">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            {/* Stream Title & State */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <Link
-                href="/observatory"
-                className="p-2 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors"
-                title="Back to Observatory"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </Link>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-text-bright">{streamDetails.name}</h1>
-                  <StateBadge state={streamDetails.state} />
-                </div>
-                {streamDetails.description && (
-                  <p className="text-xs text-text-muted mt-0.5 line-clamp-1 max-w-xs">{streamDetails.description}</p>
-                )}
-              </div>
+      {/* Compact Header */}
+      <div className="absolute top-3 left-3 right-3 z-20">
+        <div className="bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-xl px-3 py-2 shadow-2xl">
+          <div className="flex items-center gap-3">
+            {/* Back button & Title */}
+            <Link
+              href="/observatory"
+              className="p-1.5 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors"
+              title="Back to Observatory"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </Link>
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-base font-semibold text-text-bright truncate">{streamDetails.name}</h1>
+              <StateBadge state={streamDetails.state} />
             </div>
 
-            {/* Metrics Row */}
+            {/* Compact Metrics */}
             {metrics && (
-              <div className="flex flex-wrap items-center gap-6 lg:gap-8 lg:ml-auto">
-                <MetricCard
-                  label="Current Speed"
-                  value={`${metrics.speed}`}
-                  subValue="Gbps"
-                  color={stateColor}
-                  icon={
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  }
-                />
-                
-                <MetricCard
-                  label="Divers"
-                  value={metrics.activeDivers}
-                  subValue="Active"
-                  progress={(metrics.activeDivers / Math.max(1, teamMembers.length)) * 100}
-                  color="#06b6d4"
-                  icon={
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  }
-                />
-                
-                <div className="flex flex-col gap-1">
-                  <div className="text-[10px] uppercase tracking-wider text-text-muted">Velocity</div>
-                  <div className="flex items-center gap-2">
-                    <ActivityWaveform intensity={metrics.velocity / 100} color={stateColor} />
-                    <span className="text-lg font-semibold text-text-bright">{metrics.velocity}%</span>
-                  </div>
+              <div className="hidden md:flex items-center gap-4 ml-auto text-xs">
+                <div className="flex items-center gap-1.5" title="Speed">
+                  <svg className="w-3.5 h-3.5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="text-text-bright font-medium">{metrics.speed}</span>
                 </div>
-                
-                <MetricCard
-                  label="Completion"
-                  value={`${metrics.completion}%`}
-                  progress={metrics.completion}
-                  color="#10b981"
-                  icon={
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  }
-                />
+                <div className="flex items-center gap-1.5" title="Divers">
+                  <svg className="w-3.5 h-3.5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                  </svg>
+                  <span className="text-text-bright font-medium">{metrics.activeDivers}</span>
+                </div>
+                <div className="flex items-center gap-1.5" title="Velocity">
+                  <ActivityWaveform intensity={metrics.velocity / 100} color={stateColor} className="h-4" />
+                  <span className="text-text-bright font-medium">{metrics.velocity}%</span>
+                </div>
+                <div className="flex items-center gap-1.5" title="Completion">
+                  <div className="w-12 h-1.5 bg-void-atmosphere rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${metrics.completion}%` }} />
+                  </div>
+                  <span className="text-text-bright font-medium">{metrics.completion}%</span>
+                </div>
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className={`p-2 rounded-lg transition-colors ${
-                  showSidebar 
-                    ? "bg-accent-primary/20 text-accent-primary" 
-                    : "bg-void-surface/50 text-text-muted hover:text-text-bright"
-                }`}
-                title="Toggle work items panel"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  setToastMessage("Link copied to clipboard!");
-                }}
-                className="p-2 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors"
-                title="Copy link to share"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Work Items Sidebar */}
-      {showSidebar && (
-        <div className="absolute top-28 right-4 bottom-20 w-80 z-10 overflow-hidden">
-          <div className="h-full bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-2xl flex flex-col">
-            {/* Sidebar Header */}
-            <div className="p-4 border-b border-void-atmosphere/50">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-text-bright">Work Items</h2>
-                <span className="text-xs text-text-muted">{metrics?.total ?? 0} total</span>
-              </div>
-              
-              {/* Energy State Summary */}
-              {metrics && (
-                <div className="flex gap-1">
-                  {[
-                    { state: "blazing", count: metrics.blazing, color: "#fbbf24" },
-                    { state: "kindling", count: metrics.kindling, color: "#f97316" },
-                    { state: "cooling", count: metrics.cooling, color: "#a78bfa" },
-                    { state: "dormant", count: metrics.dormant, color: "#6b7280" },
-                    { state: "crystallized", count: metrics.crystallized, color: "#06b6d4" },
-                  ].map(({ state, count, color }) => (
-                    <div
-                      key={state}
-                      className="flex-1 h-1.5 rounded-full"
-                      style={{ 
-                        backgroundColor: color,
-                        opacity: count > 0 ? 1 : 0.2,
-                      }}
-                      title={`${state}: ${count}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Work Items List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {filteredAndSortedItems.map((item) => (
-                <WorkItemCard
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedItemId === item.id}
-                  onClick={() => setSelectedItemId(selectedItemId === item.id ? null : item.id)}
-                  onStateChange={(newState) => handleWorkItemStateChange(item.id, newState)}
-                />
-              ))}
-              
-              {filteredAndSortedItems.length === 0 && (streamDetails.workItems?.length ?? 0) > 0 && (
-                <div className="text-center py-8 text-text-muted">
-                  <div className="text-3xl mb-2">🔍</div>
-                  <p className="text-sm">No items match your filter</p>
-                  <button
-                    onClick={() => setFilterState("all")}
-                    className="mt-2 text-xs text-accent-primary hover:underline"
-                  >
-                    Clear filter
-                  </button>
-                </div>
-              )}
-              
-              {(!streamDetails.workItems || streamDetails.workItems.length === 0) && (
-                <div className="text-center py-8 text-text-muted">
-                  <div className="text-3xl mb-2">🌊</div>
-                  <p className="text-sm">No work items yet</p>
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="mt-2 text-xs text-accent-primary hover:underline"
-                  >
-                    Add your first item
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom Toolbar */}
-      <div className="absolute bottom-4 left-4 right-4 z-20">
-        <div className="bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-2xl p-3 shadow-2xl">
-          <div className="flex items-center justify-between gap-4">
-            {/* Left - Filter & Sort */}
-            <div className="flex items-center gap-2">
+            {/* Actions */}
+            <div className="flex items-center gap-1 ml-auto md:ml-0">
               <FilterDropdown
                 value={filterState}
                 onChange={setFilterState}
@@ -1079,68 +910,130 @@ export default function StreamDetailPage() {
                   setShowFilterDropdown(false);
                 }}
               />
-            </div>
-
-            {/* Center - View Mode Switcher */}
-            <div className="flex items-center bg-void-surface/30 rounded-lg p-1">
-              {[
-                { mode: "stream" as ViewMode, label: "Stream Flow", icon: (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                  </svg>
-                )},
-                { mode: "list" as ViewMode, label: "List View", icon: (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                  </svg>
-                )},
-                { mode: "map" as ViewMode, label: "Map", icon: (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                )},
-              ].map(({ mode, label, icon }) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    viewMode === mode
-                      ? "bg-accent-primary/20 text-accent-primary"
-                      : "text-text-muted hover:text-text-bright"
-                  }`}
-                >
-                  {icon}
-                  <span className="hidden sm:inline">{label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Right - Actions */}
-            <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary transition-colors text-sm border border-accent-primary/50"
+                className="p-1.5 rounded-lg bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary transition-colors"
+                title="Add work item"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="hidden sm:inline">Add Item</span>
+              </button>
+              <button
+                onClick={() => setShowSidebar(!showSidebar)}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  showSidebar 
+                    ? "bg-accent-primary/20 text-accent-primary" 
+                    : "bg-void-surface/50 text-text-muted hover:text-text-bright"
+                }`}
+                title="Toggle work items panel"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setToastMessage("Link copied to clipboard!");
+                }}
+                className="p-1.5 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors"
+                title="Copy link to share"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Active Divers Indicator */}
+      {/* Work Items Sidebar */}
+      {showSidebar && (
+        <div className="absolute top-16 right-3 bottom-3 w-72 z-10 overflow-hidden">
+          <div className="h-full bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-xl flex flex-col">
+            {/* Sidebar Header */}
+            <div className="px-3 py-2 border-b border-void-atmosphere/50">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-text-bright">Work Items</span>
+                <span className="text-[10px] text-text-muted">{filteredAndSortedItems.length}{filterState !== "all" ? ` / ${metrics?.total ?? 0}` : ""}</span>
+              </div>
+              {/* Energy State Summary */}
+              {metrics && (
+                <div className="flex gap-0.5 mt-1.5">
+                  {[
+                    { state: "blazing", count: metrics.blazing, color: "#fbbf24" },
+                    { state: "kindling", count: metrics.kindling, color: "#f97316" },
+                    { state: "cooling", count: metrics.cooling, color: "#a78bfa" },
+                    { state: "dormant", count: metrics.dormant, color: "#6b7280" },
+                    { state: "crystallized", count: metrics.crystallized, color: "#06b6d4" },
+                  ].map(({ state, count, color }) => (
+                    <div
+                      key={state}
+                      className="flex-1 h-1 rounded-full cursor-pointer hover:opacity-80"
+                      style={{ 
+                        backgroundColor: color,
+                        opacity: count > 0 ? (filterState === state ? 1 : 0.6) : 0.15,
+                      }}
+                      title={`${state}: ${count}`}
+                      onClick={() => setFilterState(filterState === state ? "all" : state as EnergyStateFilter)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Work Items List */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+              {filteredAndSortedItems.map((item) => (
+                <WorkItemCard
+                  key={item.id}
+                  item={item}
+                  isSelected={selectedItemId === item.id}
+                  onClick={() => setSelectedItemId(selectedItemId === item.id ? null : item.id)}
+                  onStateChange={(newState) => handleWorkItemStateChange(item.id, newState)}
+                />
+              ))}
+              
+              {filteredAndSortedItems.length === 0 && (streamDetails.workItems?.length ?? 0) > 0 && (
+                <div className="text-center py-6 text-text-muted">
+                  <p className="text-xs">No items match filter</p>
+                  <button
+                    onClick={() => setFilterState("all")}
+                    className="mt-1 text-[10px] text-accent-primary hover:underline"
+                  >
+                    Clear filter
+                  </button>
+                </div>
+              )}
+              
+              {(!streamDetails.workItems || streamDetails.workItems.length === 0) && (
+                <div className="text-center py-6 text-text-muted">
+                  <p className="text-xs">No work items yet</p>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="mt-1 text-[10px] text-accent-primary hover:underline"
+                  >
+                    Add first item
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Divers Indicator - compact */}
       {streamDetails.divers && streamDetails.divers.length > 0 && (
-        <div className="absolute bottom-20 left-4 z-10">
-          <div className="bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-xl px-3 py-2">
-            <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">Active Divers</div>
-            <div className="flex -space-x-2">
-              {streamDetails.divers.slice(0, 5).map((diver) => (
+        <div className="absolute bottom-3 left-3 z-10">
+          <div className="bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-lg px-2 py-1.5 flex items-center gap-2">
+            <span className="text-[10px] text-text-muted">Divers</span>
+            <div className="flex -space-x-1.5">
+              {streamDetails.divers.slice(0, 4).map((diver) => (
                 <div
                   key={diver.id}
-                  className="w-8 h-8 rounded-full border-2 border-void-deep flex items-center justify-center text-xs font-medium"
+                  className="w-6 h-6 rounded-full border-2 border-void-deep flex items-center justify-center text-[10px] font-medium"
                   style={{
                     backgroundColor: (diver.energySignatureColor ?? "#00d4ff") + "40",
                     borderColor: diver.energySignatureColor ?? "#00d4ff",
@@ -1150,9 +1043,9 @@ export default function StreamDetailPage() {
                   {diver.name.charAt(0)}
                 </div>
               ))}
-              {streamDetails.divers.length > 5 && (
-                <div className="w-8 h-8 rounded-full border-2 border-void-deep bg-void-surface flex items-center justify-center text-xs text-text-muted">
-                  +{streamDetails.divers.length - 5}
+              {streamDetails.divers.length > 4 && (
+                <div className="w-6 h-6 rounded-full border-2 border-void-deep bg-void-surface flex items-center justify-center text-[10px] text-text-muted">
+                  +{streamDetails.divers.length - 4}
                 </div>
               )}
             </div>
