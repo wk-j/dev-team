@@ -9,33 +9,22 @@ import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
 import type { WorkItem as WorkItemType } from "@/lib/api/client";
 
-// Format seconds to HH:MM:SS
-function formatDuration(seconds: number): string {
+// Format duration to compact format (0s, 10s, 1m, 1h)
+function formatDurationCompact(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
   
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
-// Format duration to human readable
-function formatDurationHuman(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return `${hours}h`;
   }
   if (minutes > 0) {
     return `${minutes}m`;
   }
-  return `${seconds}s`;
+  return `${secs}s`;
 }
 
-// Time Tracker Component
+// Time Tracker Component - Compact inline version
 function TimeTracker({ workItemId, onUpdate }: { workItemId: string; onUpdate?: () => void }) {
   const { data: timeData, refetch } = useTimeEntries(workItemId, { pollInterval: 10000 });
   const { startTimer, stopTimer, isLoading } = useTimeTracking(workItemId);
@@ -78,44 +67,39 @@ function TimeTracker({ workItemId, onUpdate }: { workItemId: string; onUpdate?: 
     }
   };
 
+  const displayTime = isRunning ? totalTime + elapsedTime : totalTime;
+
   return (
-    <div className="flex items-center gap-1.5">
-      {/* Total time display */}
-      <span className="text-[10px] text-text-muted font-mono" title="Total time tracked">
-        {formatDurationHuman(isRunning ? totalTime + elapsedTime : totalTime)}
+    <div className="flex items-center gap-2">
+      {/* Time display */}
+      <span className={`text-sm font-mono ${isRunning ? "text-accent-primary" : "text-text-muted"}`}>
+        {formatDurationCompact(displayTime)}
       </span>
       
-      {/* Timer button */}
+      {/* Play/Stop button */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
         }}
         disabled={isLoading}
-        className={`p-1 rounded transition-all ${
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
           isRunning
-            ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
-            : "bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20"
+            ? "bg-red-500/30 text-red-400 hover:bg-red-500/40"
+            : "bg-accent-primary/20 text-accent-primary hover:bg-accent-primary/30"
         }`}
-        title={isRunning ? `Stop timer (${formatDuration(elapsedTime)})` : "Start timer"}
+        title={isRunning ? "Stop timer" : "Start timer"}
       >
         {isRunning ? (
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
             <rect x="6" y="6" width="12" height="12" rx="1" />
           </svg>
         ) : (
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
       </button>
-      
-      {/* Running indicator */}
-      {isRunning && (
-        <span className="text-[10px] text-red-400 font-mono">
-          {formatDuration(elapsedTime)}
-        </span>
-      )}
     </div>
   );
 }
@@ -297,7 +281,7 @@ function StreamStateDropdown({
   );
 }
 
-// Work item card for the sidebar - compact version
+// Work item card for the sidebar - matches mockup design
 function WorkItemCard({ 
   item, 
   isSelected,
@@ -316,34 +300,45 @@ function WorkItemCard({
     cooling: "#a78bfa",
     crystallized: "#06b6d4",
   };
+  const stateLabels: Record<string, string> = {
+    dormant: "DORMANT",
+    kindling: "KINDLING",
+    blazing: "BLAZING",
+    cooling: "COOLING",
+    crystallized: "DONE",
+  };
   const color = stateColors[item.energyState] ?? "#6b7280";
   
   return (
     <div
       onClick={onClick}
-      className={`group relative px-2.5 py-2 rounded-lg border transition-all cursor-pointer ${
+      className={`group relative rounded-xl transition-all cursor-pointer overflow-hidden ${
         isSelected
-          ? "bg-accent-primary/10 border-accent-primary/50"
-          : "bg-void-surface/40 border-transparent hover:border-void-atmosphere hover:bg-void-surface/60"
+          ? "bg-void-surface/80 ring-1 ring-accent-primary/50"
+          : "bg-void-surface/50 hover:bg-void-surface/70"
       }`}
     >
-      {/* Energy indicator */}
+      {/* Left color band with glow effect */}
       <div 
-        className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-lg"
-        style={{ backgroundColor: color }}
+        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+        style={{ 
+          backgroundColor: color,
+          boxShadow: `0 0 8px ${color}, 0 0 16px ${color}80, 0 0 24px ${color}40`,
+        }}
       />
       
-      <div className="pl-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <h4 className="text-xs font-medium text-text-bright leading-tight line-clamp-1 flex-1">
-            {item.title}
-          </h4>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <TimeTracker workItemId={item.id} />
-            <span className="text-[9px] uppercase text-text-muted capitalize">
-              {item.energyState === "crystallized" ? "done" : item.energyState}
-            </span>
-          </div>
+      <div className="flex items-center justify-between px-4 py-3 pl-5">
+        {/* Title */}
+        <h4 className="text-sm font-medium text-text-bright leading-tight line-clamp-1 flex-1 mr-3">
+          {item.title}
+        </h4>
+        
+        {/* Right side: Time + Play button + Status */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <TimeTracker workItemId={item.id} />
+          <span className="text-xs text-text-muted uppercase tracking-wide min-w-[70px] text-right">
+            {stateLabels[item.energyState] ?? item.energyState.toUpperCase()}
+          </span>
         </div>
       </div>
     </div>
@@ -1000,7 +995,7 @@ export default function StreamDetailPage() {
   // Loading state
   if (streamLoading) {
     return (
-      <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] flex items-center justify-center bg-void-deep">
+      <div className="h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] flex items-center justify-center bg-void-deep">
         <div className="text-center">
           <div className="animate-pulse text-4xl mb-4">🌊</div>
           <p className="text-moon text-text-dim">Loading stream...</p>
@@ -1012,7 +1007,7 @@ export default function StreamDetailPage() {
   // Error state
   if (streamError || !streamDetails) {
     return (
-      <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] flex items-center justify-center bg-void-deep">
+      <div className="h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] flex items-center justify-center bg-void-deep">
         <div className="text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <p className="text-text-bright mb-2">Stream not found</p>
@@ -1029,7 +1024,7 @@ export default function StreamDetailPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] relative overflow-hidden bg-void-deep">
+    <div className="h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] relative overflow-hidden bg-void-deep">
       {/* Full-screen 3D Canvas in dive mode */}
       <div className="absolute inset-0 canvas-container">
         <VoidCanvas 
@@ -1169,41 +1164,35 @@ export default function StreamDetailPage() {
 
       {/* Work Items Sidebar */}
       {showSidebar && (
-        <div className="absolute top-16 right-3 bottom-3 w-72 z-10 overflow-hidden">
-          <div className="h-full bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-xl flex flex-col">
-            {/* Sidebar Header */}
-            <div className="px-3 py-2 border-b border-void-atmosphere/50">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-text-bright">Work Items</span>
-                <span className="text-[10px] text-text-muted">{filteredAndSortedItems.length}{filterState !== "all" ? ` / ${metrics?.total ?? 0}` : ""}</span>
+        <div className="absolute top-16 right-3 bottom-3 w-80 z-10 overflow-hidden">
+          <div className="h-full flex flex-col">
+            {/* Energy State Progress Bars */}
+            {metrics && (
+              <div className="flex gap-1 px-3 mb-3">
+                {[
+                  { state: "crystallized", count: metrics.crystallized, color: "#06b6d4" },
+                  { state: "blazing", count: metrics.blazing, color: "#fbbf24" },
+                  { state: "kindling", count: metrics.kindling, color: "#f97316" },
+                  { state: "cooling", count: metrics.cooling, color: "#a78bfa" },
+                  { state: "dormant", count: metrics.dormant, color: "#6b7280" },
+                ].map(({ state, count, color }) => (
+                  <div
+                    key={state}
+                    className="h-1.5 rounded-full cursor-pointer hover:opacity-80 transition-all"
+                    style={{ 
+                      backgroundColor: color,
+                      flex: count > 0 ? count : 0.5,
+                      opacity: count > 0 ? (filterState === state || filterState === "all" ? 1 : 0.4) : 0.2,
+                    }}
+                    title={`${state}: ${count}`}
+                    onClick={() => setFilterState(filterState === state ? "all" : state as EnergyStateFilter)}
+                  />
+                ))}
               </div>
-              {/* Energy State Summary */}
-              {metrics && (
-                <div className="flex gap-0.5 mt-1.5">
-                  {[
-                    { state: "blazing", count: metrics.blazing, color: "#fbbf24" },
-                    { state: "kindling", count: metrics.kindling, color: "#f97316" },
-                    { state: "cooling", count: metrics.cooling, color: "#a78bfa" },
-                    { state: "dormant", count: metrics.dormant, color: "#6b7280" },
-                    { state: "crystallized", count: metrics.crystallized, color: "#06b6d4" },
-                  ].map(({ state, count, color }) => (
-                    <div
-                      key={state}
-                      className="flex-1 h-1 rounded-full cursor-pointer hover:opacity-80"
-                      style={{ 
-                        backgroundColor: color,
-                        opacity: count > 0 ? (filterState === state ? 1 : 0.6) : 0.15,
-                      }}
-                      title={`${state}: ${count}`}
-                      onClick={() => setFilterState(filterState === state ? "all" : state as EnergyStateFilter)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
             
             {/* Work Items List */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
               {filteredAndSortedItems.map((item) => (
                 <WorkItemCard
                   key={item.id}
@@ -1244,14 +1233,14 @@ export default function StreamDetailPage() {
 
       {/* Active Divers Indicator - compact */}
       {streamDetails.divers && streamDetails.divers.length > 0 && (
-        <div className="absolute bottom-3 left-3 z-10">
-          <div className="bg-void-deep/80 backdrop-blur-xl border border-void-atmosphere/50 rounded-lg px-2 py-1.5 flex items-center gap-2">
-            <span className="text-[10px] text-text-muted">Divers</span>
+        <div className="absolute bottom-4 left-4 z-10">
+          <div className="bg-void-deep/90 backdrop-blur-xl border border-void-atmosphere/50 rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">Divers</span>
             <div className="flex -space-x-1.5">
               {streamDetails.divers.slice(0, 4).map((diver) => (
                 <div
                   key={diver.id}
-                  className="w-6 h-6 rounded-full border-2 border-void-deep flex items-center justify-center text-[10px] font-medium"
+                  className="w-7 h-7 rounded-full border-2 border-void-deep flex items-center justify-center text-[10px] font-medium shadow-md"
                   style={{
                     backgroundColor: (diver.energySignatureColor ?? "#00d4ff") + "40",
                     borderColor: diver.energySignatureColor ?? "#00d4ff",
@@ -1262,7 +1251,7 @@ export default function StreamDetailPage() {
                 </div>
               ))}
               {streamDetails.divers.length > 4 && (
-                <div className="w-6 h-6 rounded-full border-2 border-void-deep bg-void-surface flex items-center justify-center text-[10px] text-text-muted">
+                <div className="w-7 h-7 rounded-full border-2 border-void-deep bg-void-surface flex items-center justify-center text-[10px] text-text-muted shadow-md">
                   +{streamDetails.divers.length - 4}
                 </div>
               )}
