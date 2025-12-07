@@ -66,7 +66,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         )
       );
 
-    // Delete any existing (surfaced) dive record for this stream to avoid unique constraint
+    // Delete any existing dive records for this stream to avoid unique constraint
+    // This includes both surfaced and active dives (in case of data inconsistency)
     await db
       .delete(streamDivers)
       .where(
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         streamId: id,
         userId: session.user.id,
         divedAt: new Date(),
+        surfacedAt: null,
       })
       .returning();
 
@@ -120,8 +122,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     console.error("Failed to dive into stream:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to dive into stream" },
+      { error: `Failed to dive into stream: ${errorMessage}` },
       { status: 500 }
     );
   }

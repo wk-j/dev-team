@@ -41,9 +41,9 @@ const LAYOUT = {
     spacing: 8,       // Vertical spacing between streams
     z: 0,             // All streams on same Z plane
   },
-  // Work items - sit directly on stream lanes
+  // Work items - float above stream lanes for better visibility and clickability
   workItems: {
-    yOffset: 0.5,     // Tiny offset above stream
+    yOffset: 3,       // Float above stream line
     xSpacing: 8,      // Horizontal spacing between items on same stream
   },
   // Team constellation zone - above center
