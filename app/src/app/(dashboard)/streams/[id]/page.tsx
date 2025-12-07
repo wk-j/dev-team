@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useStream, useStreams, useWorkItems, useUpdateWorkItem, useTeam, useMe } from "@/lib/api/hooks";
+import { useStream, useStreams, useWorkItems, useUpdateWorkItem, useCreateWorkItem, useTeam, useMe } from "@/lib/api/hooks";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
 import type { WorkItem as WorkItemType } from "@/lib/api/client";
@@ -191,6 +191,425 @@ function WorkItemCard({
 // View mode types
 type ViewMode = "stream" | "list" | "map";
 
+// Filter types
+type EnergyStateFilter = "all" | "dormant" | "kindling" | "blazing" | "cooling" | "crystallized";
+
+// Sort types
+type SortOption = "position" | "state" | "recent" | "name";
+
+// Toast notification component
+function Toast({ message, isVisible, onClose }: { message: string; isVisible: boolean; onClose: () => void }) {
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(onClose, 3000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [isVisible, onClose]);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="bg-void-surface/95 backdrop-blur-xl border border-void-atmosphere rounded-lg px-4 py-2 shadow-2xl">
+        <p className="text-sm text-text-bright">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+// Add Work Item Modal
+function AddWorkItemModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: { title: string; description: string; depth: string }) => void;
+  isLoading: boolean;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [depth, setDepth] = useState<"shallow" | "medium" | "deep" | "abyssal">("medium");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTitle("");
+      setDescription("");
+      setDepth("medium");
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onSubmit({ title: title.trim(), description: description.trim(), depth });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-void-deep/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="relative bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h2 className="text-lg font-semibold text-text-bright mb-4">Add Work Item</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider text-text-muted mb-1.5">Title</label>
+            <input
+              ref={inputRef}
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 bg-void-surface border border-void-atmosphere rounded-lg text-text-bright placeholder-text-muted focus:outline-none focus:border-accent-primary/50"
+              placeholder="What needs to be done?"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-xs uppercase tracking-wider text-text-muted mb-1.5">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 bg-void-surface border border-void-atmosphere rounded-lg text-text-bright placeholder-text-muted focus:outline-none focus:border-accent-primary/50 resize-none"
+              placeholder="Add more details (optional)"
+              rows={3}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-xs uppercase tracking-wider text-text-muted mb-1.5">Depth</label>
+            <div className="flex gap-2">
+              {(["shallow", "medium", "deep", "abyssal"] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDepth(d)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm capitalize transition-colors border ${
+                    depth === d
+                      ? "bg-accent-primary/20 text-accent-primary border-accent-primary/50"
+                      : "bg-void-surface border-void-atmosphere text-text-muted hover:text-text-bright"
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 rounded-lg bg-void-surface border border-void-atmosphere text-text-muted hover:text-text-bright transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!title.trim() || isLoading}
+              className="flex-1 px-4 py-2 rounded-lg bg-accent-primary/20 text-accent-primary border border-accent-primary/50 hover:bg-accent-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Adding..." : "Add Item"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Work Item Detail Panel
+function WorkItemDetailPanel({
+  item,
+  onClose,
+  onStateChange,
+  onDepthChange,
+}: {
+  item: WorkItemType;
+  onClose: () => void;
+  onStateChange: (newState: string) => void;
+  onDepthChange: (newDepth: string) => void;
+}) {
+  const stateColors: Record<string, string> = {
+    dormant: "#6b7280",
+    kindling: "#f97316",
+    blazing: "#fbbf24",
+    cooling: "#a78bfa",
+    crystallized: "#06b6d4",
+  };
+  const color = stateColors[item.energyState] ?? "#6b7280";
+
+  // Valid state transitions
+  const stateTransitions: Record<string, { to: string; label: string }[]> = {
+    dormant: [{ to: "kindling", label: "Start Working" }],
+    kindling: [
+      { to: "blazing", label: "Focus Mode" },
+      { to: "dormant", label: "Pause" },
+    ],
+    blazing: [{ to: "cooling", label: "Wind Down" }],
+    cooling: [
+      { to: "crystallized", label: "Complete" },
+      { to: "blazing", label: "Continue" },
+    ],
+    crystallized: [],
+  };
+
+  const availableTransitions = stateTransitions[item.energyState] ?? [];
+
+  return (
+    <div className="absolute bottom-20 right-4 w-80 z-30">
+      <div className="bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-2xl p-4 shadow-2xl">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-text-muted hover:text-text-bright transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Header */}
+        <div className="pr-8 mb-3">
+          <h3 className="text-base font-semibold text-text-bright leading-tight">{item.title}</h3>
+          {item.description && (
+            <p className="text-sm text-text-dim mt-1 line-clamp-2">{item.description}</p>
+          )}
+        </div>
+
+        {/* Status */}
+        <div className="flex items-center gap-2 mb-4">
+          <span
+            className="px-2 py-1 rounded-lg text-xs font-medium capitalize"
+            style={{ backgroundColor: color + "20", color }}
+          >
+            {item.energyState}
+          </span>
+          <span className="text-xs text-text-muted capitalize">{item.depth} depth</span>
+        </div>
+
+        {/* Energy Level */}
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-text-muted mb-1">
+            <span>Energy</span>
+            <span>{item.energyLevel}%</span>
+          </div>
+          <div className="h-2 bg-void-atmosphere rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${item.energyLevel}%`, backgroundColor: color }}
+            />
+          </div>
+        </div>
+
+        {/* Depth selector */}
+        <div className="mb-4">
+          <div className="text-xs text-text-muted mb-2">Change Depth:</div>
+          <div className="flex gap-1">
+            {(["shallow", "medium", "deep", "abyssal"] as const).map((d) => (
+              <button
+                key={d}
+                onClick={() => onDepthChange(d)}
+                className={`flex-1 px-2 py-1.5 rounded text-xs capitalize transition-colors border ${
+                  item.depth === d
+                    ? "bg-accent-primary/20 text-accent-primary border-accent-primary/50"
+                    : "border-void-atmosphere text-text-muted hover:text-text-bright hover:border-void-surface"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* State transitions */}
+        {availableTransitions.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-xs text-text-muted">Actions:</div>
+            <div className="flex flex-wrap gap-2">
+              {availableTransitions.map((t) => (
+                <button
+                  key={t.to}
+                  onClick={() => onStateChange(t.to)}
+                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors bg-void-surface border-void-atmosphere text-text-muted hover:text-text-bright hover:border-accent-primary/50"
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Completed message */}
+        {item.energyState === "crystallized" && (
+          <div className="flex items-center gap-2 text-sm text-cyan-400">
+            <span>◇</span>
+            <span>This work has crystallized</span>
+          </div>
+        )}
+
+        {/* Contributors */}
+        {item.contributors && item.contributors.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-void-atmosphere">
+            <div className="text-xs text-text-muted mb-2">Contributors:</div>
+            <div className="flex flex-wrap gap-2">
+              {item.contributors.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs"
+                  style={{ backgroundColor: c.energySignatureColor + "20" }}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-medium"
+                    style={{ backgroundColor: c.energySignatureColor + "40" }}
+                  >
+                    {c.name.charAt(0)}
+                  </div>
+                  <span className="text-text-dim">{c.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Filter Dropdown
+function FilterDropdown({
+  value,
+  onChange,
+  isOpen,
+  onToggle,
+}: {
+  value: EnergyStateFilter;
+  onChange: (value: EnergyStateFilter) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const options: { value: EnergyStateFilter; label: string; color: string }[] = [
+    { value: "all", label: "All States", color: "#00d4ff" },
+    { value: "blazing", label: "Blazing", color: "#fbbf24" },
+    { value: "kindling", label: "Kindling", color: "#f97316" },
+    { value: "cooling", label: "Cooling", color: "#a78bfa" },
+    { value: "dormant", label: "Dormant", color: "#6b7280" },
+    { value: "crystallized", label: "Crystallized", color: "#06b6d4" },
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        className={`p-2 rounded-lg transition-colors ${
+          value !== "all"
+            ? "bg-accent-primary/20 text-accent-primary"
+            : "bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright"
+        }`}
+        title="Filter"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+      </button>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-48 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-xl shadow-2xl overflow-hidden z-50">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                onChange(opt.value);
+                onToggle();
+              }}
+              className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                value === opt.value
+                  ? "bg-accent-primary/10 text-accent-primary"
+                  : "text-text-muted hover:text-text-bright hover:bg-void-surface/50"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: opt.color }} />
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Sort Dropdown
+function SortDropdown({
+  value,
+  onChange,
+  isOpen,
+  onToggle,
+}: {
+  value: SortOption;
+  onChange: (value: SortOption) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const options: { value: SortOption; label: string }[] = [
+    { value: "position", label: "Stream Position" },
+    { value: "state", label: "Energy State" },
+    { value: "recent", label: "Recently Updated" },
+    { value: "name", label: "Name" },
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        className={`p-2 rounded-lg transition-colors ${
+          value !== "position"
+            ? "bg-accent-primary/20 text-accent-primary"
+            : "bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright"
+        }`}
+        title="Sort"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      </button>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-48 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-xl shadow-2xl overflow-hidden z-50">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                onChange(opt.value);
+                onToggle();
+              }}
+              className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                value === opt.value
+                  ? "bg-accent-primary/10 text-accent-primary"
+                  : "text-text-muted hover:text-text-bright hover:bg-void-surface/50"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function StreamDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -200,6 +619,12 @@ export default function StreamDetailPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("stream");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [filterState, setFilterState] = useState<EnergyStateFilter>("all");
+  const [sortOption, setSortOption] = useState<SortOption>("position");
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Fetch stream details
   const { data: streamDetails, isLoading: streamLoading, error: streamError, refetch: refetchStream } = useStream(streamId, {
@@ -233,6 +658,7 @@ export default function StreamDetailPage() {
 
   // Work item actions
   const { kindleWorkItem, updateWorkItem } = useUpdateWorkItem();
+  const { createWorkItem, isLoading: isCreating } = useCreateWorkItem();
 
   // Create dive mode state from stream details
   const diveMode: DiveModeState | null = useMemo(() => {
@@ -277,6 +703,60 @@ export default function StreamDetailPage() {
       speed: speed.toFixed(1),
     };
   }, [streamDetails]);
+
+  // Filter and sort work items
+  const filteredAndSortedItems = useMemo(() => {
+    let items = streamDetails?.workItems ?? [];
+    
+    // Apply filter
+    if (filterState !== "all") {
+      items = items.filter(item => item.energyState === filterState);
+    }
+    
+    // Apply sort
+    items = [...items].sort((a, b) => {
+      switch (sortOption) {
+        case "state": {
+          const stateOrder = ["blazing", "kindling", "cooling", "dormant", "crystallized"];
+          return stateOrder.indexOf(a.energyState) - stateOrder.indexOf(b.energyState);
+        }
+        case "recent":
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        case "name":
+          return a.title.localeCompare(b.title);
+        case "position":
+        default:
+          return a.streamPosition - b.streamPosition;
+      }
+    });
+    
+    return items;
+  }, [streamDetails?.workItems, filterState, sortOption]);
+
+  // Get selected item
+  const selectedItem = useMemo(() => {
+    if (!selectedItemId || !streamDetails?.workItems) return null;
+    return streamDetails.workItems.find(item => item.id === selectedItemId) ?? null;
+  }, [selectedItemId, streamDetails?.workItems]);
+
+  // Handle creating a work item
+  const handleCreateWorkItem = useCallback(async (data: { title: string; description: string; depth: string }) => {
+    try {
+      await createWorkItem({
+        streamId,
+        title: data.title,
+        description: data.description || undefined,
+        depth: data.depth as "shallow" | "medium" | "deep" | "abyssal",
+      });
+      setShowAddModal(false);
+      setToastMessage("Work item added successfully");
+      refetchStream();
+      refetchWorkItems();
+    } catch (error) {
+      console.error("Failed to create work item:", error);
+      setToastMessage("Failed to add work item");
+    }
+  }, [createWorkItem, streamId, refetchStream, refetchWorkItems]);
 
   // Handle kindling a work item
   const handleKindleWorkItem = useCallback(async (itemId: string) => {
@@ -484,6 +964,7 @@ export default function StreamDetailPage() {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(window.location.href);
+                  setToastMessage("Link copied to clipboard!");
                 }}
                 className="p-2 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors"
                 title="Copy link to share"
@@ -534,7 +1015,7 @@ export default function StreamDetailPage() {
             
             {/* Work Items List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {streamDetails.workItems?.map((item) => (
+              {filteredAndSortedItems.map((item) => (
                 <WorkItemCard
                   key={item.id}
                   item={item}
@@ -544,10 +1025,29 @@ export default function StreamDetailPage() {
                 />
               ))}
               
+              {filteredAndSortedItems.length === 0 && (streamDetails.workItems?.length ?? 0) > 0 && (
+                <div className="text-center py-8 text-text-muted">
+                  <div className="text-3xl mb-2">🔍</div>
+                  <p className="text-sm">No items match your filter</p>
+                  <button
+                    onClick={() => setFilterState("all")}
+                    className="mt-2 text-xs text-accent-primary hover:underline"
+                  >
+                    Clear filter
+                  </button>
+                </div>
+              )}
+              
               {(!streamDetails.workItems || streamDetails.workItems.length === 0) && (
                 <div className="text-center py-8 text-text-muted">
                   <div className="text-3xl mb-2">🌊</div>
                   <p className="text-sm">No work items yet</p>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="mt-2 text-xs text-accent-primary hover:underline"
+                  >
+                    Add your first item
+                  </button>
                 </div>
               )}
             </div>
@@ -561,16 +1061,24 @@ export default function StreamDetailPage() {
           <div className="flex items-center justify-between gap-4">
             {/* Left - Filter & Sort */}
             <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors" title="Filter">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-              </button>
-              <button className="p-2 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors" title="Sort">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                </svg>
-              </button>
+              <FilterDropdown
+                value={filterState}
+                onChange={setFilterState}
+                isOpen={showFilterDropdown}
+                onToggle={() => {
+                  setShowFilterDropdown(!showFilterDropdown);
+                  setShowSortDropdown(false);
+                }}
+              />
+              <SortDropdown
+                value={sortOption}
+                onChange={setSortOption}
+                isOpen={showSortDropdown}
+                onToggle={() => {
+                  setShowSortDropdown(!showSortDropdown);
+                  setShowFilterDropdown(false);
+                }}
+              />
             </div>
 
             {/* Center - View Mode Switcher */}
@@ -610,25 +1118,13 @@ export default function StreamDetailPage() {
             {/* Right - Actions */}
             <div className="flex items-center gap-2">
               <button 
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-colors text-sm"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary transition-colors text-sm border border-accent-primary/50"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span className="hidden sm:inline">Add Item</span>
-              </button>
-              <button 
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors"
-                style={{ 
-                  backgroundColor: stateColor + "20",
-                  color: stateColor,
-                  borderColor: stateColor + "50",
-                }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                <span className="hidden sm:inline">Compose</span>
               </button>
             </div>
           </div>
@@ -663,6 +1159,34 @@ export default function StreamDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Selected Work Item Detail Panel */}
+      {selectedItem && (
+        <WorkItemDetailPanel
+          item={selectedItem}
+          onClose={() => setSelectedItemId(null)}
+          onStateChange={(newState) => {
+            handleWorkItemStateChange(selectedItem.id, newState);
+            setSelectedItemId(null);
+          }}
+          onDepthChange={(newDepth) => handleWorkItemDepthChange(selectedItem.id, newDepth)}
+        />
+      )}
+
+      {/* Add Work Item Modal */}
+      <AddWorkItemModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleCreateWorkItem}
+        isLoading={isCreating}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toastMessage ?? ""}
+        isVisible={!!toastMessage}
+        onClose={() => setToastMessage(null)}
+      />
     </div>
   );
 }

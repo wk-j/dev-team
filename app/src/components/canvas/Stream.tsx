@@ -8,14 +8,16 @@ import * as THREE from "three";
 export type StreamState = "nascent" | "flowing" | "rushing" | "flooding" | "stagnant" | "evaporated";
 
 // Animated stream origin star - energetic, outward radiating
-function StreamOriginStar({ 
+export function StreamOriginStar({ 
   position, 
   color, 
   intensity = 1,
+  scale = 1,
 }: { 
   position: THREE.Vector3; 
   color: string;
   intensity?: number;
+  scale?: number;
 }) {
   const coreRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
@@ -88,7 +90,7 @@ function StreamOriginStar({
   });
   
   return (
-    <group position={position}>
+    <group position={position} scale={scale}>
       {/* Outer glow */}
       <mesh ref={glowRef}>
         <sphereGeometry args={[1.8, 16, 16]} />
@@ -173,16 +175,18 @@ function StreamOriginStar({
 }
 
 // Animated stream destination star - crystalline, collecting energy
-function StreamDestinationStar({ 
+export function StreamDestinationStar({ 
   position, 
   color, 
   intensity = 1,
   crystalCount = 0,
+  scale = 1,
 }: { 
   position: THREE.Vector3; 
   color: string;
   intensity?: number;
   crystalCount?: number;
+  scale?: number;
 }) {
   const coreRef = useRef<THREE.Mesh>(null);
   const outerRef = useRef<THREE.Mesh>(null);
@@ -271,7 +275,7 @@ function StreamDestinationStar({
   }, [color]);
   
   return (
-    <group position={position}>
+    <group position={position} scale={scale}>
       {/* Outer ethereal glow */}
       <mesh ref={outerRef}>
         <sphereGeometry args={[1.6, 16, 16]} />

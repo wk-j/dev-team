@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 import { EnergyOrb, type EnergyState, type WorkItemDepth } from "./EnergyOrb";
+import { StreamOriginStar, StreamDestinationStar } from "./Stream";
 
 interface DiveModeWorkItem {
   id: string;
@@ -153,8 +154,16 @@ function DiveParticles() {
   );
 }
 
-// Stream path visualization in dive mode
-function DiveStreamPath({ color = "#00d4ff" }: { color?: string }) {
+// Stream path visualization in dive mode with animated stars
+function DiveStreamPath({ 
+  color = "#00d4ff",
+  streamState = "flowing",
+  crystalCount = 0,
+}: { 
+  color?: string;
+  streamState?: string;
+  crystalCount?: number;
+}) {
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     for (let i = 0; i <= 100; i++) {
@@ -167,8 +176,37 @@ function DiveStreamPath({ color = "#00d4ff" }: { color?: string }) {
     return pts;
   }, []);
 
+  // Get start and end positions for stars
+  const startPosition = useMemo(() => points[0] ?? new THREE.Vector3(-25, 0, -10), [points]);
+  const endPosition = useMemo(() => points[points.length - 1] ?? new THREE.Vector3(25, 0, -10), [points]);
+
+  // Calculate intensity based on stream state
+  const stateIntensity = streamState === "flooding" ? 1.2 
+    : streamState === "rushing" ? 1.0 
+    : streamState === "flowing" ? 0.8 
+    : streamState === "nascent" ? 0.6
+    : streamState === "stagnant" ? 0.4
+    : 0.2; // evaporated
+
   return (
     <>
+      {/* Animated stream origin star - larger for dive mode */}
+      <StreamOriginStar 
+        position={startPosition} 
+        color={color}
+        intensity={stateIntensity}
+        scale={1.8}
+      />
+
+      {/* Animated stream destination star - larger for dive mode */}
+      <StreamDestinationStar 
+        position={endPosition} 
+        color={color}
+        intensity={stateIntensity}
+        crystalCount={crystalCount}
+        scale={2.5}
+      />
+
       {/* Main stream line */}
       <Line
         points={points}
@@ -386,15 +424,21 @@ export function DiveMode({
       {/* Ambient particles */}
       <DiveParticles />
 
-      {/* Stream path */}
+      {/* Stream path with animated stars */}
       <DiveStreamPath
         color={
           streamState === "rushing"
             ? "#fbbf24"
             : streamState === "flooding"
             ? "#ef4444"
+            : streamState === "stagnant"
+            ? "#6b7280"
+            : streamState === "nascent"
+            ? "#64748b"
             : "#00d4ff"
         }
+        streamState={streamState}
+        crystalCount={workItems.filter(w => w.energyState === "crystallized").length}
       />
 
       {/* Work items */}
