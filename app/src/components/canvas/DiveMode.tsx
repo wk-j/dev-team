@@ -39,6 +39,8 @@ interface DiveModeProps {
   onStateChange?: (itemId: string, newState: EnergyState) => void;
   onDepthChange?: (itemId: string, newDepth: WorkItemDepth) => void;
   onSurface?: () => void;
+  /** Hide the built-in UI overlay (header, surface button, divers panel) - use when parent controls UI */
+  hideOverlay?: boolean;
 }
 
 // Valid state transitions
@@ -339,6 +341,7 @@ export function DiveMode({
   onStateChange,
   onDepthChange,
   onSurface,
+  hideOverlay = false,
 }: DiveModeProps) {
   const { camera } = useThree();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -463,91 +466,92 @@ export function DiveMode({
         />
       ))}
 
-      {/* UI Overlay */}
-      <Html fullscreen>
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Header */}
-          <div className="absolute top-4 left-4 pointer-events-auto">
-            <div className="bg-void-deep/90 backdrop-blur-sm border border-void-atmosphere rounded-lg px-4 py-3">
-              <div className="text-xs text-text-muted uppercase tracking-wider mb-1">
-                Diving In
-              </div>
-              <div className="text-lg font-medium text-text-bright">
-                {streamName}
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-sm text-text-dim">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    streamState === "rushing"
-                      ? "bg-yellow-500"
-                      : streamState === "flooding"
-                      ? "bg-red-500"
-                      : streamState === "stagnant"
-                      ? "bg-gray-500"
-                      : "bg-cyan-500"
-                  }`}
-                />
-                <span className="capitalize">{streamState}</span>
-                <span className="text-text-muted">
-                  {workItems.length} items
-                </span>
+      {/* UI Overlay - only shown when hideOverlay is false */}
+      {!hideOverlay && (
+        <Html fullscreen>
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Header */}
+            <div className="absolute top-4 left-4 pointer-events-auto">
+              <div className="bg-void-deep/90 backdrop-blur-sm border border-void-atmosphere rounded-lg px-4 py-3">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-1">
+                  Diving In
+                </div>
+                <div className="text-lg font-medium text-text-bright">
+                  {streamName}
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-sm text-text-dim">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      streamState === "rushing"
+                        ? "bg-yellow-500"
+                        : streamState === "flooding"
+                        ? "bg-red-500"
+                        : streamState === "stagnant"
+                        ? "bg-gray-500"
+                        : "bg-cyan-500"
+                    }`}
+                  />
+                  <span className="capitalize">{streamState}</span>
+                  <span className="text-text-muted">
+                    {workItems.length} items
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Surface button */}
-          <div className="absolute top-4 right-4 pointer-events-auto">
-            <button
-              onClick={onSurface}
-              className="px-4 py-2 bg-void-surface hover:bg-void-atmosphere border border-void-atmosphere rounded-lg text-sm text-text-muted hover:text-text-bright transition-colors flex items-center gap-2"
-            >
-              <span>Surface</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* Surface button */}
+            <div className="absolute top-4 right-4 pointer-events-auto">
+              <button
+                onClick={onSurface}
+                className="px-4 py-2 bg-void-surface hover:bg-void-atmosphere border border-void-atmosphere rounded-lg text-sm text-text-muted hover:text-text-bright transition-colors flex items-center gap-2"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 10l7-7m0 0l7 7m-7-7v18"
-                />
-              </svg>
-            </button>
-          </div>
+                <span>Surface</span>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 10l7-7m0 0l7 7m-7-7v18"
+                  />
+                </svg>
+              </button>
+            </div>
 
-          {/* Fellow divers */}
-          {divers.length > 1 && (
-            <div className="absolute bottom-4 left-4 pointer-events-auto">
-              <div className="bg-void-deep/90 backdrop-blur-sm border border-void-atmosphere rounded-lg px-3 py-2">
-                <div className="text-xs text-text-muted mb-2">
-                  Fellow Divers
-                </div>
-                <div className="flex -space-x-2">
-                  {divers
-                    .filter((d) => d.id !== currentUserId)
-                    .map((diver) => (
-                      <div
-                        key={diver.id}
-                        className="w-8 h-8 rounded-full border-2 border-void-deep flex items-center justify-center text-xs font-medium"
-                        style={{
-                          backgroundColor: diver.energySignatureColor + "40",
-                          borderColor: diver.energySignatureColor,
-                        }}
-                        title={diver.name}
-                      >
-                        {diver.name.charAt(0)}
-                      </div>
-                    ))}
+            {/* Fellow divers */}
+            {divers.length > 1 && (
+              <div className="absolute bottom-4 left-4 pointer-events-auto">
+                <div className="bg-void-deep/90 backdrop-blur-sm border border-void-atmosphere rounded-lg px-3 py-2">
+                  <div className="text-xs text-text-muted mb-2">
+                    Fellow Divers
+                  </div>
+                  <div className="flex -space-x-2">
+                    {divers
+                      .filter((d) => d.id !== currentUserId)
+                      .map((diver) => (
+                        <div
+                          key={diver.id}
+                          className="w-8 h-8 rounded-full border-2 border-void-deep flex items-center justify-center text-xs font-medium"
+                          style={{
+                            backgroundColor: diver.energySignatureColor + "40",
+                            borderColor: diver.energySignatureColor,
+                          }}
+                          title={diver.name}
+                        >
+                          {diver.name.charAt(0)}
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Selected item panel with state transitions */}
-          {selectedItem && (
+            {/* Selected item panel with state transitions */}
+            {selectedItem && (
             <div className="absolute bottom-4 right-4 pointer-events-auto">
               <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl p-4 min-w-[280px] max-w-[320px]">
                 {/* Close button */}
@@ -648,9 +652,10 @@ export function DiveMode({
                 )}
               </div>
             </div>
-          )}
-        </div>
-      </Html>
+            )}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }

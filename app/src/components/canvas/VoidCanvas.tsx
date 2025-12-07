@@ -123,6 +123,8 @@ interface VoidCanvasProps {
   onWorkItemKindle?: (itemId: string) => void;
   onWorkItemStateChange?: (itemId: string, newState: EnergyState) => void;
   onWorkItemDepthChange?: (itemId: string, newDepth: WorkItemDepth) => void;
+  /** Hide DiveMode's built-in UI overlay - use when parent page controls UI */
+  hideDiveModeOverlay?: boolean;
   // Accessibility & Performance
   reducedMotion?: boolean;
   particleDensity?: number;
@@ -310,6 +312,7 @@ export function VoidCanvas({
   onWorkItemKindle,
   onWorkItemStateChange,
   onWorkItemDepthChange,
+  hideDiveModeOverlay = false,
   reducedMotion = false,
   particleDensity = 1.0,
   teamPulseSettings,
@@ -370,6 +373,7 @@ export function VoidCanvas({
               onItemClick={onWorkItemClick}
               onStateChange={onWorkItemStateChange}
               onDepthChange={onWorkItemDepthChange}
+              hideOverlay={hideDiveModeOverlay}
             />
             
             {showPerformance && <PerformanceMonitor />}
