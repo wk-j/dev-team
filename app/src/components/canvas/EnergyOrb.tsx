@@ -18,9 +18,12 @@ interface EnergyOrbProps {
   assignee?: string;
   onClick?: () => void;
   onCrystallize?: () => void;
+  streamPosition?: [number, number, number]; // Position on the stream path (for tether line)
+  /** Show persistent title label (default: true) */
+  showLabel?: boolean;
 }
 
-// Energy state visual configuration
+// Energy state visual configuration - simplified for cleaner visuals
 const energyConfig: Record<EnergyState, {
   color: string;
   emissiveIntensity: number;
@@ -28,19 +31,21 @@ const energyConfig: Record<EnergyState, {
   particleCount: number;
   wireframe: boolean;
 }> = {
-  dormant: { color: "#4b5563", emissiveIntensity: 0.2, pulseSpeed: 0.3, particleCount: 0, wireframe: false },
-  kindling: { color: "#f97316", emissiveIntensity: 0.6, pulseSpeed: 1.0, particleCount: 5, wireframe: false },
-  blazing: { color: "#fbbf24", emissiveIntensity: 1.2, pulseSpeed: 2.0, particleCount: 15, wireframe: false },
-  cooling: { color: "#a78bfa", emissiveIntensity: 0.4, pulseSpeed: 0.5, particleCount: 3, wireframe: false },
-  crystallized: { color: "#06b6d4", emissiveIntensity: 0.8, pulseSpeed: 0.2, particleCount: 0, wireframe: true },
+  dormant: { color: "#6b7280", emissiveIntensity: 0.3, pulseSpeed: 0.3, particleCount: 0, wireframe: false },
+  kindling: { color: "#f97316", emissiveIntensity: 0.8, pulseSpeed: 1.0, particleCount: 0, wireframe: false },
+  blazing: { color: "#fbbf24", emissiveIntensity: 1.0, pulseSpeed: 1.5, particleCount: 0, wireframe: false },
+  cooling: { color: "#a78bfa", emissiveIntensity: 0.5, pulseSpeed: 0.5, particleCount: 0, wireframe: false },
+  crystallized: { color: "#06b6d4", emissiveIntensity: 0.6, pulseSpeed: 0.2, particleCount: 0, wireframe: false },
 };
 
-// Depth affects size
+// Depth affects size - BASE_SCALE keeps orbs small relative to the scene
+const BASE_ORB_SCALE = 0.4; // Base multiplier to keep orbs small
+
 const depthScale: Record<WorkItemDepth, number> = {
-  shallow: 0.6,
-  medium: 0.9,
-  deep: 1.3,
-  abyssal: 1.8,
+  shallow: BASE_ORB_SCALE * 0.6,   // 0.24
+  medium: BASE_ORB_SCALE * 0.8,    // 0.32
+  deep: BASE_ORB_SCALE * 1.0,      // 0.4
+  abyssal: BASE_ORB_SCALE * 1.3,   // 0.52
 };
 
 // Crystallization particle burst effect
@@ -214,6 +219,8 @@ export function EnergyOrb({
   assignee,
   onClick,
   onCrystallize,
+  streamPosition,
+  showLabel = true,
 }: EnergyOrbProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const particlesRef = useRef<THREE.Points>(null);
@@ -295,6 +302,31 @@ export function EnergyOrb({
 
   return (
     <group position={position}>
+      {/* Tether line connecting work item to its stream */}
+      {streamPosition && (
+        <line>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[
+                new Float32Array([
+                  0, 0, 0, // Start at work item (relative to group)
+                  streamPosition[0] - position[0],
+                  streamPosition[1] - position[1],
+                  streamPosition[2] - position[2],
+                ]),
+                3,
+              ]}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial
+            color={config.color}
+            transparent
+            opacity={0.6}
+          />
+        </line>
+      )}
+
       {/* Crystallization burst effect */}
       {showCrystallizationEffect && (
         <CrystallizationEffect
@@ -304,7 +336,7 @@ export function EnergyOrb({
         />
       )}
 
-      {/* Crystallization rings for crystallized state */}
+      {/* Crystallization rings for crystallized state only */}
       {energyState === "crystallized" && (
         <CrystallizationRings
           position={[0, 0, 0]}
@@ -313,27 +345,14 @@ export function EnergyOrb({
         />
       )}
 
-      {/* Outer glow */}
-      <mesh scale={scale * 2}>
-        <sphereGeometry args={[1, 16, 16]} />
-        <meshBasicMaterial
-          color={config.color}
-          transparent
-          opacity={energyState === "crystallized" ? 0.15 : 0.1}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Crystal facet highlights for crystallized state */}
-      {energyState === "crystallized" && (
-        <mesh scale={scale * 1.1}>
-          <icosahedronGeometry args={[1, 0]} />
+      {/* Subtle glow - only for active states, much smaller */}
+      {(energyState === "blazing" || energyState === "kindling") && (
+        <mesh scale={scale * 1.4}>
+          <sphereGeometry args={[1, 8, 8]} />
           <meshBasicMaterial
-            color="#ffffff"
+            color={config.color}
             transparent
-            opacity={0.1}
-            wireframe
+            opacity={0.15}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />
@@ -378,16 +397,45 @@ export function EnergyOrb({
         </points>
       )}
 
-      {/* Point light for glow effect */}
-      <pointLight
-        color={config.color}
-        intensity={config.emissiveIntensity * 2}
-        distance={scale * 5}
-      />
+      {/* Point light for subtle glow - only for active items */}
+      {(energyState === "blazing" || energyState === "kindling") && (
+        <pointLight
+          color={config.color}
+          intensity={config.emissiveIntensity * 0.8}
+          distance={scale * 3}
+        />
+      )}
 
       {/* Sparkle effect for crystallized */}
       {energyState === "crystallized" && (
         <CrystalSparkles scale={scale} color={config.color} />
+      )}
+
+      {/* Persistent title label - always visible when not hovered */}
+      {showLabel && !hovered && (
+        <Html 
+          position={[0, -scale * 2.5, 0]} 
+          center
+          style={{ pointerEvents: "none" }}
+          zIndexRange={[100, 200]}
+        >
+          <div 
+            className="text-center"
+            style={{ 
+              textShadow: "0 0 8px rgba(0,0,0,0.8), 0 0 16px rgba(0,0,0,0.6)",
+            }}
+          >
+            <div 
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded max-w-[100px] truncate"
+              style={{ 
+                color: config.color,
+                backgroundColor: "rgba(5, 8, 15, 0.7)",
+              }}
+            >
+              {title.length > 20 ? title.slice(0, 18) + "..." : title}
+            </div>
+          </div>
+        </Html>
       )}
 
       {/* Hover tooltip */}
@@ -396,7 +444,7 @@ export function EnergyOrb({
           position={[0, scale * 3, 0]} 
           center
           style={{ pointerEvents: "none" }}
-          zIndexRange={[1000, 1100]}
+          zIndexRange={[1200, 1300]}
         >
           <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 text-center whitespace-nowrap pointer-events-none shadow-2xl min-w-[180px]">
             <div className="text-base font-semibold text-text-bright truncate max-w-[200px]">
@@ -468,7 +516,7 @@ function CrystalSparkles({ scale, color }: { scale: number; color: string }) {
   );
 }
 
-// WorkItemsView to render all work items
+// WorkItemsView to render all work items with proper z-ordering
 interface WorkItemsViewProps {
   items: Array<{
     id: string;
@@ -477,6 +525,7 @@ interface WorkItemsViewProps {
     energyState: EnergyState;
     depth: WorkItemDepth;
     position: [number, number, number];
+    streamPosition?: [number, number, number]; // Anchor point on stream for tether
     assignee?: string;
   }>;
   onItemClick?: (id: string) => void;
@@ -484,9 +533,22 @@ interface WorkItemsViewProps {
 }
 
 export function WorkItemsView({ items, onItemClick, onItemCrystallize }: WorkItemsViewProps) {
+  // Sort by energy state for visual priority (blazing/kindling on top)
+  const stateOrder: Record<EnergyState, number> = {
+    blazing: 0,
+    kindling: 1,
+    cooling: 2,
+    dormant: 3,
+    crystallized: 4,
+  };
+  
+  const sortedItems = [...items].sort((a, b) => {
+    return stateOrder[a.energyState] - stateOrder[b.energyState];
+  });
+
   return (
     <group>
-      {items.map((item) => (
+      {sortedItems.map((item) => (
         <EnergyOrb
           key={item.id}
           id={item.id}
@@ -495,6 +557,7 @@ export function WorkItemsView({ items, onItemClick, onItemCrystallize }: WorkIte
           energyState={item.energyState}
           depth={item.depth}
           position={item.position}
+          streamPosition={item.streamPosition}
           assignee={item.assignee}
           onClick={() => onItemClick?.(item.id)}
           onCrystallize={() => onItemCrystallize?.(item.id)}
@@ -504,14 +567,15 @@ export function WorkItemsView({ items, onItemClick, onItemCrystallize }: WorkIte
   );
 }
 
-// Mock work items for demo
+// Mock work items for demo - positioned in work zone (Y: 4-8, above streams)
 export const mockWorkItems = [
   {
     id: "w1",
     title: "Implement login flow",
     energyState: "crystallized" as EnergyState,
     depth: "medium" as WorkItemDepth,
-    position: [25, 0, -2] as [number, number, number],
+    position: [20, 5, 3] as [number, number, number],      // Above stream 1
+    streamPosition: [20, 2, 3] as [number, number, number], // Anchor on stream
     assignee: "Alex Chen",
   },
   {
@@ -519,7 +583,8 @@ export const mockWorkItems = [
     title: "Design system updates",
     energyState: "blazing" as EnergyState,
     depth: "deep" as WorkItemDepth,
-    position: [5, 2, -12] as [number, number, number],
+    position: [6, 6, 22] as [number, number, number],      // Above stream 2
+    streamPosition: [6, 2.5, 22] as [number, number, number],
     assignee: "Maya Patel",
   },
   {
@@ -527,7 +592,8 @@ export const mockWorkItems = [
     title: "API endpoint for users",
     energyState: "kindling" as EnergyState,
     depth: "medium" as WorkItemDepth,
-    position: [-5, -3, 18] as [number, number, number],
+    position: [3, 5, 15] as [number, number, number],      // Above stream 2
+    streamPosition: [3, 2, 15] as [number, number, number],
     assignee: "Jordan Kim",
   },
   {
@@ -535,14 +601,16 @@ export const mockWorkItems = [
     title: "Bug: Form validation",
     energyState: "dormant" as EnergyState,
     depth: "shallow" as WorkItemDepth,
-    position: [15, 12, -8] as [number, number, number],
+    position: [-20, 4, -4] as [number, number, number],    // Above stream 3
+    streamPosition: [-20, 2, -4] as [number, number, number],
   },
   {
     id: "w5",
     title: "Performance optimization",
     energyState: "cooling" as EnergyState,
     depth: "abyssal" as WorkItemDepth,
-    position: [-15, 0, 5] as [number, number, number],
+    position: [-6, 7, -22] as [number, number, number],    // Above stream 4
+    streamPosition: [-6, 2, -22] as [number, number, number],
     assignee: "Dr. Nova",
   },
 ];

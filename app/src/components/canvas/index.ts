@@ -1,4 +1,4 @@
-export { VoidCanvas } from "./VoidCanvas";
+export { VoidCanvas, LAYOUT, ZoneBoundary } from "./VoidCanvas";
 export { VoidEnvironment, getTimeOfDayFromHour, getWeatherFromTeamHealth } from "./VoidEnvironment";
 export type { TimeOfDay, WeatherState } from "./VoidEnvironment";
 export { CameraController } from "./CameraController";
@@ -17,6 +17,7 @@ export { PulseCore, calculateTeamMetrics } from "./PulseCore";
 export { CrystalGarden, createMockCrystals } from "./CrystalGarden";
 export { QuickStats, getTimeOfDay, calculateQuickStats } from "./QuickStats";
 export { PingEffect, PingArrivalEffect, PingManager } from "./PingEffect";
+export { ObservatoryGuide } from "./ObservatoryGuide";
 
 export type { StarType, OrbitalState } from "./CelestialBody";
 export type { PingType as PingEffectType } from "./PingEffect";

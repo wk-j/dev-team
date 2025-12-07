@@ -17,6 +17,8 @@ interface CelestialBodyProps {
   position: [number, number, number];
   color: string;
   onClick?: () => void;
+  /** Show persistent name label (default: true) */
+  showLabel?: boolean;
 }
 
 // Star type configuration
@@ -37,6 +39,19 @@ const orbitalConfig: Record<OrbitalState, { pulseSpeed: number; ringOpacity: num
   supernova: { pulseSpeed: 4, ringOpacity: 1, dimFactor: 1.5 },
 };
 
+interface CelestialBodyProps {
+  id: string;
+  name: string;
+  role?: string;
+  starType: StarType;
+  orbitalState: OrbitalState;
+  position: [number, number, number];
+  color: string;
+  onClick?: () => void;
+  /** Show persistent name label (default: true) */
+  showLabel?: boolean;
+}
+
 export function CelestialBody({
   id,
   name,
@@ -46,6 +61,7 @@ export function CelestialBody({
   position,
   color,
   onClick,
+  showLabel = true,
 }: CelestialBodyProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
@@ -80,11 +96,11 @@ export function CelestialBody({
 
     if (glowRef.current) {
       if (hovered) {
-        // Static glow when hovered
-        glowRef.current.scale.setScalar(config.scale * 2.2);
+        // Static glow when hovered - slightly larger
+        glowRef.current.scale.setScalar(config.scale * 1.8);
       } else {
-        // Glow pulsing when not hovered
-        const glowScale = config.scale * 2 * (1 + Math.sin(t * orbital.pulseSpeed * 0.5) * 0.1);
+        // Glow pulsing when not hovered - reduced size
+        const glowScale = config.scale * 1.5 * (1 + Math.sin(t * orbital.pulseSpeed * 0.5) * 0.1);
         glowRef.current.scale.setScalar(glowScale);
       }
     }
@@ -104,16 +120,18 @@ export function CelestialBody({
         />
       </mesh>
 
-      {/* Orbital ring */}
-      <mesh ref={ringRef}>
-        <torusGeometry args={[config.scale * 1.5, 0.03, 8, 64]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={orbital.ringOpacity}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+      {/* Orbital ring - only visible for focused/deep_work states */}
+      {(orbitalState === "focused" || orbitalState === "deep_work") && (
+        <mesh ref={ringRef}>
+          <torusGeometry args={[config.scale * 1.8, 0.04, 8, 64]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={orbital.ringOpacity * 0.6}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      )}
 
       {/* Core star */}
       <mesh
@@ -139,7 +157,36 @@ export function CelestialBody({
         distance={config.scale * 10}
       />
 
-      {/* Hover tooltip */}
+      {/* Persistent name label - always visible */}
+      {showLabel && !hovered && (
+        <Html 
+          position={[0, -config.scale * 2, 0]} 
+          center
+          style={{ 
+            pointerEvents: "none",
+          }}
+          zIndexRange={[100, 200]}
+        >
+          <div 
+            className="text-center whitespace-nowrap"
+            style={{ 
+              textShadow: "0 0 8px rgba(0,0,0,0.8), 0 0 16px rgba(0,0,0,0.6)",
+            }}
+          >
+            <div 
+              className="text-xs font-medium px-2 py-0.5 rounded"
+              style={{ 
+                color: color,
+                backgroundColor: "rgba(5, 8, 15, 0.7)",
+              }}
+            >
+              {name.split(" ")[0]}
+            </div>
+          </div>
+        </Html>
+      )}
+
+      {/* Hover tooltip - Higher z-index for team members */}
       {hovered && (
         <Html 
           position={[0, config.scale * 2.5, 0]} 
@@ -148,7 +195,7 @@ export function CelestialBody({
             pointerEvents: "none",
             transform: "translate(-50%, -100%)",
           }}
-          zIndexRange={[1000, 1100]}
+          zIndexRange={[1300, 1400]}
         >
           <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 text-center whitespace-nowrap shadow-2xl min-w-[160px]">
             <div className="text-base font-semibold text-text-bright">{name}</div>

@@ -1,29 +1,97 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useMemo } from "react";
+import { Line } from "@react-three/drei";
+import * as THREE from "three";
 import { VoidEnvironment, getTimeOfDayFromHour, getWeatherFromTeamHealth } from "./VoidEnvironment";
 import { CameraController } from "./CameraController";
 import { ParticleField } from "./ParticleField";
 import { ConstellationView, type TeamMember } from "./ConstellationView";
 import { PerformanceMonitor } from "./PerformanceMonitor";
-import { ResonanceConnections, generateMockConnections } from "./ResonanceConnections";
 import { StreamsView, mockStreams, type StreamState } from "./Stream";
 import { WorkItemsView, mockWorkItems, type EnergyState, type WorkItemDepth } from "./EnergyOrb";
 import { DiveMode } from "./DiveMode";
 import { PulseCore, calculateTeamMetrics } from "./PulseCore";
-import { CrystalGarden, createMockCrystals } from "./CrystalGarden";
 import type { Stream, WorkItem, StreamDiver } from "@/lib/api/client";
 
-// Mock team member positions for generating connections
-const mockTeamPositions = [
-  { id: "1", position: [0, 0, 0] as [number, number, number] },
-  { id: "2", position: [15, 5, -10] as [number, number, number] },
-  { id: "3", position: [-12, -3, 8] as [number, number, number] },
-  { id: "4", position: [8, -8, 15] as [number, number, number] },
-  { id: "5", position: [-18, 10, -5] as [number, number, number] },
-  { id: "6", position: [20, 2, 12] as [number, number, number] },
-];
+// ============================================================================
+// SPATIAL LAYOUT - SIMPLE HORIZONTAL LANES
+// ============================================================================
+// Much simpler layout for readability:
+//
+//   TOP: Team members (Y = +15)
+//   CENTER: Team Pulse (Y = 0)  
+//   BOTTOM: Streams as HORIZONTAL LANES (Y = -8 to -20)
+//           Work items sit ON their stream lane
+//
+// ============================================================================
+
+const LAYOUT = {
+  // Core zone - central pulse (elevated slightly)
+  core: {
+    position: [0, 5, 0] as [number, number, number],
+    radius: 4,
+  },
+  // Streams - horizontal lanes below center
+  streams: {
+    startX: -25,      // Left edge
+    endX: 25,         // Right edge
+    baseY: -5,        // First stream Y position
+    spacing: 8,       // Vertical spacing between streams
+    z: 0,             // All streams on same Z plane
+  },
+  // Work items - sit directly on stream lanes
+  workItems: {
+    yOffset: 0.5,     // Tiny offset above stream
+    xSpacing: 8,      // Horizontal spacing between items on same stream
+  },
+  // Team constellation zone - above center
+  team: {
+    radius: 20,
+    y: 15,            // Above the pulse
+    yVariation: 2,
+  },
+  // Ambient particles zone
+  ambient: {
+    innerRadius: 40,
+    outerRadius: 60,
+  },
+} as const;
+
+// Zone boundary ring - subtle visual separator
+function ZoneBoundary({ radius, opacity = 0.1, color = "#00d4ff" }: { 
+  radius: number; 
+  opacity?: number; 
+  color?: string;
+}) {
+  const points = useMemo(() => {
+    const pts: THREE.Vector3[] = [];
+    const segments = 64;
+    for (let i = 0; i <= segments; i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      pts.push(new THREE.Vector3(
+        Math.cos(angle) * radius,
+        0,
+        Math.sin(angle) * radius
+      ));
+    }
+    return pts;
+  }, [radius]);
+
+  return (
+    <Line
+      points={points}
+      color={color}
+      lineWidth={1}
+      transparent
+      opacity={opacity}
+      dashed
+      dashSize={2}
+      gapSize={2}
+    />
+  );
+}
 
 // Dive mode state
 export interface DiveModeState {
@@ -39,9 +107,7 @@ interface VoidCanvasProps {
   showPerformance?: boolean;
   showStreams?: boolean;
   showWorkItems?: boolean;
-  showConnections?: boolean;
   showPulseCore?: boolean;
-  showCrystalGarden?: boolean;
   // Real data from API
   streams?: Stream[];
   workItems?: WorkItem[];
@@ -60,45 +126,95 @@ interface VoidCanvasProps {
   particleDensity?: number;
 }
 
-// Transform API stream data to component format
-function transformStreams(apiStreams: Stream[] | undefined, useMockData: boolean = false) {
+// Transform API stream data to SIMPLE HORIZONTAL LANES
+function transformStreams(apiStreams: Stream[] | undefined) {
   if (!apiStreams || apiStreams.length === 0) {
-    return useMockData ? mockStreams : [];
+    return [];
   }
 
-  return apiStreams.map((stream, index) => ({
-    id: stream.id,
-    name: stream.name,
-    pathPoints: stream.pathPoints.length >= 2 
-      ? stream.pathPoints 
-      : [
-          { x: -20 + index * 5, y: index * 2, z: 0 },
-          { x: -10 + index * 5, y: 2 + index, z: 5 },
-          { x: 0 + index * 5, y: index * 2, z: 0 },
-          { x: 10 + index * 5, y: -2 + index, z: -5 },
-          { x: 20 + index * 5, y: index * 2, z: 0 },
-        ],
-    state: stream.state as StreamState,
-    velocity: stream.velocity,
-    itemCount: stream.itemCount,
-    crystalCount: stream.crystalCount,
-  }));
+  const { startX, endX, baseY, spacing, z } = LAYOUT.streams;
+
+  return apiStreams.map((stream, index) => {
+    // Each stream is a simple horizontal line at different Y positions
+    const y = baseY - (index * spacing);
+    
+    return {
+      id: stream.id,
+      name: stream.name,
+      // Simple straight horizontal line from left to right
+      pathPoints: [
+        { x: startX, y, z },
+        { x: endX, y, z },
+      ],
+      state: stream.state as StreamState,
+      velocity: stream.velocity,
+      itemCount: stream.itemCount,
+      crystalCount: stream.crystalCount,
+      // Store Y position for work item placement
+      laneY: y,
+    };
+  });
 }
 
-// Transform API work item data to component format
-function transformWorkItems(apiWorkItems: WorkItem[] | undefined, useMockData: boolean = false) {
+// Transform work items - position ON their stream lane (simple horizontal layout)
+function transformWorkItems(
+  apiWorkItems: WorkItem[] | undefined,
+  streams: Array<{ id: string; pathPoints: Array<{ x: number; y: number; z: number }>; laneY?: number }>
+) {
   if (!apiWorkItems || apiWorkItems.length === 0) {
-    return useMockData ? mockWorkItems : [];
+    return [];
   }
 
-  return apiWorkItems.map((item, index) => {
-    // Generate position based on index
-    const angle = (index / apiWorkItems.length) * Math.PI * 2;
-    const radius = 15 + (index % 3) * 5;
+  // If no streams, place items in a row
+  if (streams.length === 0) {
+    return apiWorkItems.map((item, index) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description ?? undefined,
+      energyState: item.energyState as EnergyState,
+      depth: item.depth as WorkItemDepth,
+      position: [-15 + index * 8, -5, 0] as [number, number, number],
+      streamPosition: undefined,
+      assignee: item.contributors?.find(c => c.isPrimary)?.name,
+    }));
+  }
+
+  // Group items by stream
+  const itemsByStream = new Map<string, typeof apiWorkItems>();
+  apiWorkItems.forEach(item => {
+    // Find matching stream or use first stream
+    const stream = streams.find(s => s.id === item.streamId) || streams[0]!;
+    const streamId = stream.id;
+    const items = itemsByStream.get(streamId) || [];
+    items.push(item);
+    itemsByStream.set(streamId, items);
+  });
+
+  return apiWorkItems.map((item) => {
+    // Find the stream for this item (or fallback to first)
+    const stream = streams.find(s => s.id === item.streamId) || streams[0]!;
+    const itemsOnStream = itemsByStream.get(stream.id) || [];
+    const indexOnStream = itemsOnStream.findIndex(i => i.id === item.id);
+    const totalOnStream = itemsOnStream.length;
+    
+    // Get stream Y position (lane)
+    const streamY = stream.laneY ?? stream.pathPoints[0]?.y ?? -5;
+    
+    // Position item along the stream (spread horizontally)
+    const { startX, endX } = LAYOUT.streams;
+    const streamWidth = endX - startX;
+    const xPadding = 8; // Don't place at very edges
+    const availableWidth = streamWidth - (xPadding * 2);
+    
+    // Distribute items evenly across the stream
+    const x = totalOnStream > 1
+      ? startX + xPadding + (indexOnStream / (totalOnStream - 1)) * availableWidth
+      : 0; // Single item in center
+    
     const position: [number, number, number] = [
-      Math.cos(angle) * radius,
-      (Math.random() - 0.5) * 10,
-      Math.sin(angle) * radius,
+      x,
+      streamY + LAYOUT.workItems.yOffset, // Slightly above stream
+      LAYOUT.streams.z,
     ];
 
     return {
@@ -108,7 +224,8 @@ function transformWorkItems(apiWorkItems: WorkItem[] | undefined, useMockData: b
       energyState: item.energyState as EnergyState,
       depth: item.depth as WorkItemDepth,
       position,
-      assignee: item.contributors.find(c => c.isPrimary)?.name,
+      streamPosition: undefined, // No tether needed - items are ON the stream
+      assignee: item.contributors?.find(c => c.isPrimary)?.name,
     };
   });
 }
@@ -118,9 +235,7 @@ export function VoidCanvas({
   showPerformance = false,
   showStreams = true,
   showWorkItems = true,
-  showConnections = true,
   showPulseCore = true,
-  showCrystalGarden = true,
   streams: apiStreams,
   workItems: apiWorkItems,
   teamMembers = [],
@@ -134,85 +249,36 @@ export function VoidCanvas({
   reducedMotion = false,
   particleDensity = 1.0,
 }: VoidCanvasProps) {
-  const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
-
-  // Check if we have real data
-  const hasRealData = (apiStreams && apiStreams.length > 0) || (apiWorkItems && apiWorkItems.length > 0);
-
-  // Transform API data to component format, memoized (no mock data fallback)
-  const streams = useMemo(() => transformStreams(apiStreams, false), [apiStreams]);
-  const workItems = useMemo(() => transformWorkItems(apiWorkItems, false), [apiWorkItems]);
-
-  // Only show connections if we have real data (empty array otherwise)
-  const connections = useMemo(() => {
-    if (!hasRealData) return [];
-    return generateMockConnections(mockTeamPositions);
-  }, [hasRealData]);
+  // Transform data
+  const streams = useMemo(() => transformStreams(apiStreams), [apiStreams]);
+  const workItems = useMemo(() => transformWorkItems(apiWorkItems, streams), [apiWorkItems, streams]);
 
   // Calculate team metrics for PulseCore
   const teamMetrics = useMemo(() => {
     return calculateTeamMetrics(workItems, teamMemberCount);
   }, [workItems, teamMemberCount]);
 
-  // Create crystals from completed work items (no mock fallback)
-  const crystals = useMemo(() => {
-    const crystallizedItems = workItems.filter(item => item.energyState === "crystallized");
-    return crystallizedItems.map(item => ({
-      id: item.id,
-      title: item.title,
-      completedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-      energyLevel: 70 + Math.random() * 30,
-      depth: item.depth as "shallow" | "medium" | "deep" | "abyssal",
-      contributor: item.assignee,
-    }));
-  }, [workItems]);
+  // Time-based environment
+  const timeOfDay = getTimeOfDayFromHour();
+  const weather = getWeatherFromTeamHealth(
+    teamMetrics.energyLevel,
+    teamMetrics.harmonyScore,
+    teamMetrics.activeRatio
+  );
 
-  // Time-based ambient lighting
-  const timeOfDay = useMemo(() => getTimeOfDayFromHour(), []);
-
-  // Weather based on team health
-  const weatherState = useMemo(() => {
-    const activeItems = workItems.filter(
-      item => item.energyState === "kindling" || item.energyState === "blazing"
-    ).length;
-    const activeRatio = workItems.length > 0 ? activeItems / workItems.length : 0;
-    return getWeatherFromTeamHealth(
-      teamMetrics.energyLevel,
-      teamMetrics.harmonyScore,
-      activeRatio
-    );
-  }, [workItems, teamMetrics]);
-
-  // Handle stream click for diving
-  const handleStreamClick = (streamId: string) => {
-    onDiveIntoStream?.(streamId);
-  };
-
-  // Handle work item click in dive mode
-  const handleItemClick = (itemId: string) => {
-    setFocusedItemId(itemId);
-    onWorkItemClick?.(itemId);
-  };
-
-  const isInDiveMode = !!diveMode;
-
-  return (
-    <div className={className}>
-      <Canvas
-        camera={{ position: [0, 0, 50], fov: 60 }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true }}
-      >
-        <Suspense fallback={null}>
-          <VoidEnvironment 
-            timeOfDay={timeOfDay}
-            weatherState={weatherState}
-            energyLevel={teamMetrics.energyLevel}
-          />
-          <CameraController />
-          
-          {isInDiveMode ? (
-            // Dive mode view
+  // In dive mode, show dive view
+  if (diveMode) {
+    return (
+      <div className={className}>
+        <Canvas
+          camera={{ position: [0, 15, 30], fov: 60 }}
+          dpr={[1, 2]}
+          gl={{ antialias: true, alpha: true }}
+        >
+          <Suspense fallback={null}>
+            <VoidEnvironment timeOfDay={timeOfDay} weatherState={weather} />
+            <CameraController />
+            
             <DiveMode
               streamId={diveMode.streamId}
               streamName={diveMode.streamName}
@@ -226,74 +292,109 @@ export function VoidCanvas({
                 depth: item.depth as WorkItemDepth,
                 streamPosition: item.streamPosition,
               }))}
-              divers={diveMode.divers.map(d => ({
-                id: d.id,
-                name: d.name,
-                avatarUrl: d.avatarUrl,
-                starType: d.starType,
-                orbitalState: d.orbitalState,
+              divers={diveMode.divers.map(diver => ({
+                id: diver.id,
+                name: diver.name,
+                avatarUrl: diver.avatarUrl,
+                starType: diver.starType,
+                orbitalState: diver.orbitalState,
                 energySignatureColor: "#00d4ff", // Default color if not provided
               }))}
               currentUserId={currentUserId}
-              focusedItemId={focusedItemId}
-              onItemClick={handleItemClick}
-              onItemKindle={onWorkItemKindle}
               onSurface={onSurfaceFromStream}
+              onItemClick={onWorkItemClick}
             />
-          ) : (
-            // Normal observatory view
-            <>
-              <ParticleField 
-                count={500} 
-                reducedMotion={reducedMotion}
-                particleDensity={particleDensity}
-              />
+            
+            {showPerformance && <PerformanceMonitor />}
+          </Suspense>
+        </Canvas>
+      </div>
+    );
+  }
 
-              {/* Layer 0: Pulse Core (center) */}
-              {showPulseCore && (
-                <PulseCore
-                  position={[0, 0, -10]}
-                  energyLevel={teamMetrics.energyLevel}
-                  activeMembers={teamMetrics.activeMembers}
-                  totalMembers={teamMetrics.totalMembers}
-                  activeWorkItems={teamMetrics.activeWorkItems}
-                  completedToday={teamMetrics.completedToday}
-                  harmonyScore={teamMetrics.harmonyScore}
-                />
-              )}
+  // Normal observatory view - simple horizontal layout
+  return (
+    <div className={className}>
+      <Canvas
+        camera={{ position: [0, 20, 50], fov: 50 }}
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: true }}
+      >
+        <Suspense fallback={null}>
+          {/* Environment */}
+          <VoidEnvironment timeOfDay={timeOfDay} weatherState={weather} />
+          <CameraController />
+          
+          {/* ============================================ */}
+          {/* ZONE 4: AMBIENT - Background particles      */}
+          {/* ============================================ */}
+          <ParticleField 
+            count={reducedMotion ? 100 : 250} 
+            spread={LAYOUT.ambient.outerRadius} 
+            reducedMotion={reducedMotion}
+            particleDensity={particleDensity * 0.7}
+          />
 
-              {/* Layer 1: Streams (background) */}
-              {showStreams && (
-                <StreamsView 
-                  streams={streams} 
-                  onStreamClick={handleStreamClick}
-                />
-              )}
+          {/* No zone boundaries needed for horizontal layout */}
 
-              {/* Layer 2: Work Items */}
-              {showWorkItems && <WorkItemsView items={workItems} />}
-
-              {/* Layer 3: Crystal Garden (completed work) */}
-              {showCrystalGarden && crystals.length > 0 && (
-                <CrystalGarden
-                  crystals={crystals}
-                  position={[25, -5, -15]}
-                  radius={8}
-                />
-              )}
-
-              {/* Layer 4: Connections between team members */}
-              {showConnections && <ResonanceConnections connections={connections} />}
-
-              {/* Layer 5: Team members (foreground) */}
-              <ConstellationView members={teamMembers} />
-            </>
+          {/* ============================================ */}
+          {/* ZONE 0: CORE - Central team pulse           */}
+          {/* ============================================ */}
+          {showPulseCore && (
+            <PulseCore 
+              position={LAYOUT.core.position}
+              energyLevel={teamMetrics.energyLevel}
+              activeMembers={teamMetrics.activeMembers}
+              totalMembers={teamMetrics.totalMembers}
+              activeWorkItems={teamMetrics.activeWorkItems}
+              completedToday={teamMetrics.completedToday}
+              harmonyScore={teamMetrics.harmonyScore}
+            />
           )}
 
-          {/* UI Overlays */}
-          {showPerformance && <PerformanceMonitor visible={true} position="bottom-right" />}
+          {/* ============================================ */}
+          {/* ZONE 1: STREAMS - Work streams mid-zone     */}
+          {/* ============================================ */}
+          {showStreams && streams.length > 0 && (
+            <StreamsView
+              streams={streams}
+              onStreamClick={onDiveIntoStream}
+            />
+          )}
+
+          {/* ============================================ */}
+          {/* ZONE 2: WORK ITEMS - Floating above streams */}
+          {/* ============================================ */}
+          {showWorkItems && workItems.length > 0 && (
+            <WorkItemsView
+              items={workItems}
+              onItemClick={onWorkItemKindle}
+            />
+          )}
+
+          {/* ============================================ */}
+          {/* ZONE 3: TEAM - Above center                 */}
+          {/* ============================================ */}
+          {teamMembers.length > 0 && (
+            <ConstellationView 
+              members={teamMembers} 
+              orbitRadius={LAYOUT.team.radius}
+              yVariation={LAYOUT.team.yVariation}
+              baseY={LAYOUT.team.y}
+            />
+          )}
+
+          {/* Performance monitor */}
+          {showPerformance && <PerformanceMonitor />}
         </Suspense>
       </Canvas>
     </div>
   );
 }
+
+// Re-export types and mocks for backward compatibility
+export { mockStreams, mockWorkItems };
+export type { EnergyState, WorkItemDepth, StreamState };
+
+// Export layout constants for consistent positioning across components
+export { LAYOUT, ZoneBoundary };

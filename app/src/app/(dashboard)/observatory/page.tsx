@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useStreams, useWorkItems, useStream, useDiveMode, useUpdateWorkItem, useTeam } from "@/lib/api/hooks";
 import { useClassicView } from "@/lib/accessibility";
 import { ClassicView } from "@/components/ClassicView";
+import { ObservatoryGuide } from "@/components/canvas/ObservatoryGuide";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
 
@@ -27,6 +28,7 @@ const VoidCanvas = dynamic(
 export default function ObservatoryPage() {
   const [showPerformance, setShowPerformance] = useState(false);
   const [showStats, setShowStats] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
   const [diveMode, setDiveMode] = useState<DiveModeState | null>(null);
   
   // Check if classic view is enabled
@@ -192,6 +194,7 @@ export default function ObservatoryPage() {
         <VoidCanvas 
           className="w-full h-full" 
           showPerformance={showPerformance}
+          showStreams={true}
           streams={streams ?? undefined}
           workItems={workItems ?? undefined}
           teamMembers={teamMembers}
@@ -221,6 +224,16 @@ export default function ObservatoryPage() {
                   Demo mode
                 </span>
               )}
+              <button
+                className="px-3 py-1.5 text-xs rounded-lg backdrop-blur-sm transition-colors bg-void-deep/80 text-accent-primary border border-accent-primary/50 hover:bg-accent-primary/10 flex items-center gap-1.5"
+                onClick={() => setShowGuide(true)}
+                title="Show guide"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Help
+              </button>
               <button
                 className={`px-2 py-1 text-xs rounded-lg backdrop-blur-sm transition-colors ${
                   showStats
@@ -313,21 +326,59 @@ export default function ObservatoryPage() {
             </div>
           </div>
 
-          {/* Legend - bottom right */}
+          {/* Legend - bottom right - explains all canvas elements */}
           <div className="absolute bottom-4 right-4 z-10 pointer-events-auto">
-            <div className="bg-void-deep/80 backdrop-blur-md border border-void-atmosphere rounded-lg px-3 py-2">
-              <div className="flex gap-3 text-xs text-text-muted">
-                <span className="flex items-center gap-1.5">
+            <div className="bg-void-deep/90 backdrop-blur-md border border-void-atmosphere rounded-xl p-3 min-w-[200px]">
+              <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2">Legend</div>
+              
+              {/* Element types */}
+              <div className="space-y-2 text-xs">
+                {/* Center pulse */}
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#00d4ff]/50 flex-shrink-0" />
+                  <span className="text-text-muted">Team Pulse (center)</span>
+                </div>
+                
+                {/* Streams */}
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-0.5 bg-[#00d4ff] flex-shrink-0 rounded" />
+                  <span className="text-text-muted">Work Stream</span>
+                </div>
+                
+                {/* Work items */}
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#fbbf24] flex-shrink-0" />
+                  <span className="text-text-muted">Work Item (active)</span>
+                </div>
+                
+                {/* Team members */}
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#ff6b9d] ring-1 ring-[#ff6b9d]/50 flex-shrink-0" />
+                  <span className="text-text-muted">Team Member (outer ring)</span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-void-atmosphere my-2" />
+              
+              {/* Work item states */}
+              <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1.5">Work States</div>
+              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-[#4b5563]" />
+                  <span className="text-text-dim">Dormant</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-[#f97316]" />
+                  <span className="text-text-dim">Kindling</span>
+                </span>
+                <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-[#fbbf24]" />
-                  Lead
+                  <span className="text-text-dim">Blazing</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#00d4ff]" />
-                  Dev
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#8b5cf6]" />
-                  Spec
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-[#06b6d4]" />
+                  <span className="text-text-dim">Done</span>
                 </span>
               </div>
             </div>
@@ -352,6 +403,9 @@ export default function ObservatoryPage() {
           </div>
         </div>
       )}
+
+      {/* Observatory Guide Modal */}
+      <ObservatoryGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

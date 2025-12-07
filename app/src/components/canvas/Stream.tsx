@@ -19,7 +19,7 @@ interface StreamProps {
   onClick?: () => void;
 }
 
-// Stream state visual configuration
+// Stream state visual configuration - increased visibility
 const streamConfig: Record<StreamState, {
   color: string;
   particleSpeed: number;
@@ -30,12 +30,12 @@ const streamConfig: Record<StreamState, {
   healthLabel: string;
   pulseSpeed: number;
 }> = {
-  nascent: { color: "#64748b", particleSpeed: 0.3, particleDensity: 0.3, lineWidth: 1, opacity: 0.4, healthColor: "#64748b", healthLabel: "New", pulseSpeed: 0 },
-  flowing: { color: "#00d4ff", particleSpeed: 0.5, particleDensity: 0.6, lineWidth: 2, opacity: 0.6, healthColor: "#10b981", healthLabel: "Healthy", pulseSpeed: 1 },
-  rushing: { color: "#fbbf24", particleSpeed: 0.8, particleDensity: 0.8, lineWidth: 3, opacity: 0.8, healthColor: "#fbbf24", healthLabel: "Active", pulseSpeed: 2 },
-  flooding: { color: "#ef4444", particleSpeed: 1.0, particleDensity: 1.0, lineWidth: 4, opacity: 0.9, healthColor: "#ef4444", healthLabel: "Overloaded", pulseSpeed: 3 },
-  stagnant: { color: "#6b7280", particleSpeed: 0.05, particleDensity: 0.2, lineWidth: 2, opacity: 0.3, healthColor: "#f97316", healthLabel: "Stagnant", pulseSpeed: 0.5 },
-  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 1, opacity: 0.1, healthColor: "#374151", healthLabel: "Archived", pulseSpeed: 0 },
+  nascent: { color: "#64748b", particleSpeed: 0.3, particleDensity: 0.3, lineWidth: 3, opacity: 0.7, healthColor: "#64748b", healthLabel: "New", pulseSpeed: 0 },
+  flowing: { color: "#00d4ff", particleSpeed: 0.5, particleDensity: 0.6, lineWidth: 4, opacity: 0.85, healthColor: "#10b981", healthLabel: "Healthy", pulseSpeed: 1 },
+  rushing: { color: "#fbbf24", particleSpeed: 0.8, particleDensity: 0.8, lineWidth: 5, opacity: 0.9, healthColor: "#fbbf24", healthLabel: "Active", pulseSpeed: 2 },
+  flooding: { color: "#ef4444", particleSpeed: 1.0, particleDensity: 1.0, lineWidth: 6, opacity: 1.0, healthColor: "#ef4444", healthLabel: "Overloaded", pulseSpeed: 3 },
+  stagnant: { color: "#6b7280", particleSpeed: 0.05, particleDensity: 0.2, lineWidth: 3, opacity: 0.6, healthColor: "#f97316", healthLabel: "Stagnant", pulseSpeed: 0.5 },
+  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 2, opacity: 0.4, healthColor: "#374151", healthLabel: "Archived", pulseSpeed: 0 },
 };
 
 // Stream health indicator component
@@ -232,8 +232,8 @@ export function Stream({
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={() => setIsHovered(false)}
     >
-      {/* Health indicator at stream start */}
-      {showHealthIndicator && (
+      {/* Health indicator at stream start - only on hover to reduce clutter */}
+      {showHealthIndicator && isHovered && (
         <StreamHealthIndicator
           position={startPosition}
           state={state}
@@ -244,22 +244,32 @@ export function Stream({
         />
       )}
 
-      {/* Main stream path */}
+      {/* Stream start point indicator - small orb at beginning */}
+      <mesh position={startPosition}>
+        <sphereGeometry args={[0.5, 12, 12]} />
+        <meshBasicMaterial
+          color={config.color}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+
+      {/* Main stream path - BOLD and visible */}
       <Line
         points={curvePoints}
         color={config.color}
         lineWidth={isHovered ? config.lineWidth * 1.5 : config.lineWidth}
         transparent
-        opacity={isHovered ? Math.min(config.opacity + 0.2, 1) : config.opacity}
+        opacity={isHovered ? 1 : config.opacity}
       />
 
       {/* Stream glow (wider, more transparent) */}
       <Line
         points={curvePoints}
         color={config.color}
-        lineWidth={config.lineWidth * 3}
+        lineWidth={config.lineWidth * 2}
         transparent
-        opacity={config.opacity * (isHovered ? 0.4 : 0.2)}
+        opacity={config.opacity * 0.3}
       />
 
       {/* Flowing particles */}
@@ -281,14 +291,31 @@ export function Stream({
         />
       </points>
 
-      {/* Stream name label at midpoint (shown on hover) */}
-      {isHovered && (
-        <Html position={curve.getPoint(0.5).toArray()} center distanceFactor={20}>
-          <div className="bg-void-deep/80 backdrop-blur-sm border border-void-atmosphere rounded px-2 py-1 text-xs text-text-bright whitespace-nowrap pointer-events-none">
+      {/* Stream name label at START (left side) - always visible */}
+      <Html 
+        position={curve.getPoint(0).toArray()} 
+        center 
+        style={{ pointerEvents: "none" }}
+        zIndexRange={[50, 100]}
+      >
+        <div 
+          className="whitespace-nowrap"
+          style={{ 
+            transform: "translateX(-100%) translateX(-8px)",
+          }}
+        >
+          <div 
+            className="text-xs font-semibold px-2 py-1 rounded-lg"
+            style={{ 
+              color: "#fff",
+              backgroundColor: config.color,
+              boxShadow: `0 0 12px ${config.color}40`,
+            }}
+          >
             {name}
           </div>
-        </Html>
-      )}
+        </div>
+      </Html>
     </group>
   );
 }
@@ -311,7 +338,7 @@ function createParticleData(curve: THREE.CatmullRomCurve3, density: number) {
   return { positions, offsets };
 }
 
-// StreamsView component to render all streams
+// StreamsView component to render all streams with proper spacing
 interface StreamsViewProps {
   streams: Array<{
     id: string;
@@ -327,9 +354,24 @@ interface StreamsViewProps {
 }
 
 export function StreamsView({ streams, showHealthIndicators = true, onStreamClick }: StreamsViewProps) {
+  // Sort streams by state priority (flooding/rushing first, then flowing, etc.)
+  // This ensures important streams are rendered on top
+  const stateOrder: Record<StreamState, number> = {
+    flooding: 0,
+    rushing: 1,
+    flowing: 2,
+    nascent: 3,
+    stagnant: 4,
+    evaporated: 5,
+  };
+  
+  const sortedStreams = [...streams].sort((a, b) => {
+    return stateOrder[a.state] - stateOrder[b.state];
+  });
+
   return (
     <group>
-      {streams.map((stream) => (
+      {sortedStreams.map((stream) => (
         <Stream
           key={stream.id}
           id={stream.id}
@@ -347,17 +389,15 @@ export function StreamsView({ streams, showHealthIndicators = true, onStreamClic
   );
 }
 
-// Mock streams for demo
+// Mock streams for demo - using zoned layout (streams flow from radius 10 to 30)
 export const mockStreams = [
   {
     id: "1",
     name: "Frontend Sprint",
     pathPoints: [
-      { x: -30, y: 0, z: -20 },
-      { x: -15, y: 5, z: -15 },
-      { x: 0, y: 2, z: -10 },
-      { x: 15, y: -3, z: -5 },
-      { x: 30, y: 0, z: 0 },
+      { x: 10, y: 0, z: 0 },      // Start at inner edge
+      { x: 18, y: 3, z: 4 },      // Curve up
+      { x: 28, y: 1.5, z: 6 },    // End at outer edge
     ],
     state: "rushing" as StreamState,
     velocity: 1.2,
@@ -368,10 +408,9 @@ export const mockStreams = [
     id: "2",
     name: "API Development",
     pathPoints: [
-      { x: -25, y: -10, z: 10 },
-      { x: -10, y: -5, z: 15 },
-      { x: 5, y: 0, z: 20 },
-      { x: 20, y: 5, z: 15 },
+      { x: 0, y: 0, z: 10 },      // Start at inner edge (90 degrees)
+      { x: 5, y: 3, z: 18 },      // Curve up
+      { x: 8, y: 1.5, z: 28 },    // End at outer edge
     ],
     state: "flowing" as StreamState,
     velocity: 1.0,
@@ -382,9 +421,9 @@ export const mockStreams = [
     id: "3",
     name: "Bug Fixes",
     pathPoints: [
-      { x: 0, y: 15, z: -15 },
-      { x: 10, y: 12, z: -5 },
-      { x: 20, y: 10, z: 5 },
+      { x: -10, y: 0, z: 0 },     // Start at inner edge (180 degrees)
+      { x: -18, y: 3, z: -4 },    // Curve up
+      { x: -28, y: 1.5, z: -6 },  // End at outer edge
     ],
     state: "nascent" as StreamState,
     velocity: 0.5,
@@ -395,9 +434,9 @@ export const mockStreams = [
     id: "4",
     name: "Tech Debt",
     pathPoints: [
-      { x: -20, y: 8, z: 5 },
-      { x: -5, y: 10, z: 0 },
-      { x: 10, y: 6, z: -8 },
+      { x: 0, y: 0, z: -10 },     // Start at inner edge (270 degrees)
+      { x: -5, y: 3, z: -18 },    // Curve up
+      { x: -8, y: 1.5, z: -28 },  // End at outer edge
     ],
     state: "stagnant" as StreamState,
     velocity: 0.2,

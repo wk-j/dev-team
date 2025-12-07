@@ -51,8 +51,9 @@ export function PulseCore({
   // Pulse rate based on activity (0.5-2.0 Hz)
   const pulseRate = 0.5 + energyLevel * 1.5;
   
-  // Base scale based on team size and energy
-  const baseScale = 2 + (activeMembers / Math.max(totalMembers, 1)) * 1.5;
+  // Base scale based on team size and energy - REDUCED for better proportions
+  // Core should be noticeable but not dominate the view
+  const baseScale = 1.2 + (activeMembers / Math.max(totalMembers, 1)) * 0.6; // Max ~1.8
   
   // Color based on harmony (cyan at high harmony, shifting to purple at low)
   const coreColor = useMemo(() => {
@@ -63,15 +64,15 @@ export function PulseCore({
 
   // Create orbital ring particles
   const ringParticles = useMemo(() => {
-    const count = 100;
+    const count = 60; // Reduced count
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     
     for (let i = 0; i < count; i++) {
       const theta = (i / count) * Math.PI * 2;
-      const radius = 4 + Math.random() * 0.5;
+      const radius = 2.5 + Math.random() * 0.3; // Reduced radius
       positions[i * 3] = Math.cos(theta) * radius;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 0.3;
       positions[i * 3 + 2] = Math.sin(theta) * radius;
       
       // Vary colors slightly
@@ -87,12 +88,12 @@ export function PulseCore({
 
   // Ambient energy particles floating around
   const ambientParticles = useMemo(() => {
-    const count = 50;
+    const count = 30; // Reduced count
     const positions = new Float32Array(count * 3);
     const velocities: THREE.Vector3[] = [];
     
     for (let i = 0; i < count; i++) {
-      const radius = 3 + Math.random() * 3;
+      const radius = 2 + Math.random() * 2; // Reduced radius
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.random() * Math.PI;
       
@@ -161,7 +162,7 @@ export function PulseCore({
           
           // Keep within bounds (spherical containment)
           const dist = Math.sqrt(x * x + y * y + z * z);
-          if (dist > 6) {
+          if (dist > 4) {
             // Redirect toward center
             vel.x = -x * 0.01;
             vel.y = -y * 0.01;
@@ -294,6 +295,33 @@ export function PulseCore({
         distance={20}
       />
 
+      {/* Persistent label - always visible */}
+      {!hovered.current && (
+        <Html
+          position={[0, -baseScale * 1.5, 0]}
+          center
+          style={{ pointerEvents: "none" }}
+          zIndexRange={[50, 100]}
+        >
+          <div 
+            className="text-center whitespace-nowrap"
+            style={{ 
+              textShadow: "0 0 8px rgba(0,0,0,0.8), 0 0 16px rgba(0,0,0,0.6)",
+            }}
+          >
+            <div 
+              className="text-xs font-medium px-2 py-0.5 rounded"
+              style={{ 
+                color: `#${coreColor.getHexString()}`,
+                backgroundColor: "rgba(5, 8, 15, 0.7)",
+              }}
+            >
+              Team Pulse
+            </div>
+          </div>
+        </Html>
+      )}
+
       {/* Tooltip on hover */}
       {showTooltip && hovered.current && (
         <Html
@@ -367,11 +395,17 @@ export function calculateTeamMetrics(workItems: Array<{ energyState: string }>, 
   // This is simplified - in real app would use actual collaboration data
   const harmonyScore = 0.6 + Math.random() * 0.3;
   
+  // Active ratio: proportion of members working on active items
+  const activeRatio = memberCount > 0 
+    ? Math.min(1, activeItems / memberCount)
+    : 0.5;
+  
   return {
     energyLevel,
     activeWorkItems: activeItems,
     completedToday: completedItems,
     harmonyScore,
+    activeRatio,
     activeMembers: Math.ceil(memberCount * (0.5 + energyLevel * 0.5)),
     totalMembers: memberCount,
   };
