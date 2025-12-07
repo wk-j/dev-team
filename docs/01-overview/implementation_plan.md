@@ -95,9 +95,9 @@
 **API Endpoints**:
 | Endpoint | Status |
 |----------|--------|
-| GET /api/users | Pending |
-| GET /api/users/[id] | Pending |
-| PATCH /api/users/me/orbital-state | Pending |
+| GET /api/users | Complete |
+| GET /api/users/[id] | Complete |
+| PATCH /api/me/orbital-state | Complete |
 
 **Completion Criteria**:
 - [x] Team members render as glowing stars
@@ -167,9 +167,9 @@
 **API Endpoints**:
 | Endpoint | Status |
 |----------|--------|
-| GET /api/observatory/metrics | Pending |
-| GET /api/observatory/pulse | Pending |
-| GET /api/crystals | Pending |
+| GET /api/observatory/metrics | Complete |
+| GET /api/observatory/pulse | Complete |
+| GET /api/crystals | Complete |
 
 **Completion Criteria**:
 - [x] Observatory shows team overview
@@ -305,6 +305,7 @@ A task is **Complete** when:
 
 | Date | Phase | Updates |
 |------|-------|---------|
+| 2024-12-07 | Phase 2, 4 | Complete - Missing API endpoints: GET /api/users, GET /api/users/[id], PATCH /api/me/orbital-state, GET /api/observatory/metrics, GET /api/observatory/pulse, GET /api/crystals |
 | 2024-12-07 | Phase 7 | Complete - Accessibility (high contrast, reduced motion, classic 2D, keyboard nav), mobile responsive, performance optimization |
 | 2024-12-07 | Phase 6 | Complete - Sanctum settings page with profile, preferences, accessibility |
 | 2024-12-07 | Phase 5 | Complete - Pings API, travel animation, inbox UI, handoff flow |

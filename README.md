@@ -4,6 +4,17 @@
 
 **FlowState** is a revolutionary team tracking application that abandons traditional task management paradigms (Kanban, lists, sprints) in favor of an organic, living workspace where work flows like energy through streams and teams exist as celestial constellations.
 
+---
+
+## 🚀 Quick Start
+
+**New to FlowState?** Read the documentation in this order:
+
+1. **[FLOWSTATE_EXPLAINED.md](docs/00-getting-started/FLOWSTATE_EXPLAINED.md)** ⭐ **START HERE!**
+2. [QUICK_START_GUIDE.md](docs/00-getting-started/QUICK_START_GUIDE.md) - How to add work items
+3. [QUICK_REFERENCE.md](docs/00-getting-started/QUICK_REFERENCE.md) - Quick cheat sheet
+4. [IMPLEMENTATION_COMPLETE.md](docs/00-getting-started/IMPLEMENTATION_COMPLETE.md) - What's implemented
+
 ## The Concept
 
 Instead of tracking tasks, we track **energy**. Instead of moving cards between columns, we watch work **flow through streams**. Instead of a team directory, we navigate a **living constellation** of connected people.

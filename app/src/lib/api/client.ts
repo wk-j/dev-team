@@ -45,8 +45,16 @@ export interface WorkItemContributor {
   id: string;
   name: string;
   avatarUrl: string | null;
+  energySignatureColor: string;
   energyContributed: number;
   isPrimary: boolean;
+}
+
+export interface WorkItemAssignee {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  energySignatureColor: string;
 }
 
 export interface WorkItem {
@@ -61,6 +69,7 @@ export interface WorkItem {
   primaryDiverId: string | null;
   tags: string[];
   contributors: WorkItemContributor[];
+  assignee: WorkItemAssignee | null;
   createdAt: string;
   updatedAt: string;
   kindledAt: string | null;
@@ -268,6 +277,22 @@ class ApiClient {
     return this.fetch(`/work-items/${id}/handoff`, {
       method: "POST",
       body: JSON.stringify({ toUserId, message }),
+    });
+  }
+
+  async addContributor(
+    workItemId: string,
+    userId: string
+  ): Promise<{ contributor: WorkItemContributor }> {
+    return this.fetch(`/work-items/${workItemId}/contributors`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  }
+
+  async removeContributor(workItemId: string, userId: string): Promise<void> {
+    return this.fetch(`/work-items/${workItemId}/contributors?userId=${userId}`, {
+      method: "DELETE",
     });
   }
 

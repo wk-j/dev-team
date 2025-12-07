@@ -76,13 +76,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if user is the primary diver
-    if (item.primaryDiverId !== session.user.id) {
-      return NextResponse.json(
-        { error: "Only the primary diver can hand off a work item" },
-        { status: 403 }
-      );
-    }
+    // Any team member can reassign work items (removed primary diver restriction)
 
     // Verify target user is in the same team
     const receiverMembership = await db.query.teamMemberships.findFirst({
@@ -99,13 +93,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Can't hand off to yourself
-    if (toUserId === session.user.id) {
-      return NextResponse.json(
-        { error: "Cannot hand off to yourself" },
-        { status: 400 }
-      );
-    }
+    // Allow assigning to yourself (taking ownership)
 
     // Update work item primary diver
     const [updatedItem] = await db
@@ -141,16 +129,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       });
     }
 
-    // Update old primary to not be primary
-    await db
-      .update(workItemContributors)
-      .set({ isPrimary: false })
-      .where(
-        and(
-          eq(workItemContributors.workItemId, id),
-          eq(workItemContributors.userId, session.user.id)
-        )
-      );
+    // Update old primary to not be primary (if there was one)
+    if (item.primaryDiverId) {
+      await db
+        .update(workItemContributors)
+        .set({ isPrimary: false })
+        .where(
+          and(
+            eq(workItemContributors.workItemId, id),
+            eq(workItemContributors.userId, item.primaryDiverId)
+          )
+        );
+    }
 
     // Send a ping to notify the recipient
     await db.insert(resonancePings).values({

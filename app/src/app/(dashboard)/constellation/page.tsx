@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useTeam } from "@/lib/api/hooks";
+import { useState } from "react";
+import { useUsers, useSendPing } from "@/lib/api/hooks";
 import { MemberProfileCard } from "@/components/canvas/MemberProfileCard";
 import { EnergyInfusionModal } from "@/components/canvas/EnergyInfusionModal";
 import type { StarType, OrbitalState } from "@/components/canvas/CelestialBody";
@@ -15,6 +15,9 @@ interface TeamMember {
   orbitalState: string;
   energySignatureColor: string;
   resonanceScore: number;
+  currentEnergyLevel: number;
+  crystalsThisWeek?: number;
+  activeStreams?: number;
 }
 
 const orbitalStateInfo: Record<string, { label: string; color: string; icon: string }> = {
@@ -37,23 +40,28 @@ export default function ConstellationPage() {
   const [filter, setFilter] = useState<string>("all");
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [showInfusionModal, setShowInfusionModal] = useState(false);
+  const [showPingModal, setShowPingModal] = useState(false);
+  const [pingMessage, setPingMessage] = useState("");
+  const [pingType, setPingType] = useState<"gentle" | "warm" | "direct">("warm");
 
-  // Fetch real team data
-  const { data: team, isLoading } = useTeam({ pollInterval: 30000 });
+  // Fetch team members with real resonance scores
+  const { data: users, isLoading, refetch } = useUsers({ pollInterval: 30000 });
+  const { sendPing, isLoading: isSendingPing } = useSendPing();
 
-  // Transform team members to include resonance score
-  const teamMembers: TeamMember[] = useMemo(() => {
-    return (team?.members ?? []).map(member => ({
-      id: member.id,
-      name: member.name,
-      email: member.email,
-      role: member.userRole,
-      starType: member.starType,
-      orbitalState: member.orbitalState,
-      energySignatureColor: member.energySignatureColor,
-      resonanceScore: 80, // Default resonance - TODO: calculate from real data
-    }));
-  }, [team?.members]);
+  // Transform users to team members
+  const teamMembers: TeamMember[] = (users ?? []).map(user => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    starType: user.starType,
+    orbitalState: user.orbitalState,
+    energySignatureColor: user.energySignatureColor,
+    resonanceScore: user.resonanceScore ?? 0,
+    currentEnergyLevel: user.currentEnergyLevel,
+    crystalsThisWeek: (user as any).crystalsThisWeek ?? 0,
+    activeStreams: (user as any).activeStreams ?? 0,
+  }));
 
   const filteredMembers = teamMembers.filter((member) => {
     if (filter === "all") return true;
@@ -182,9 +190,13 @@ export default function ConstellationPage() {
                   {/* Actions */}
                   <div className="flex gap-2">
                     <button
-                      className="flex-1 px-3 py-2 text-xs bg-void-atmosphere hover:bg-void-surface rounded-lg text-text-dim hover:text-text-bright transition-colors"
+                      className="flex-1 px-3 py-2 text-xs bg-void-atmosphere hover:bg-void-surface rounded-lg text-text-dim hover:text-text-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={member.orbitalState === "deep_work"}
                       title={member.orbitalState === "deep_work" ? "In deep work mode" : "Send a ping"}
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setShowPingModal(true);
+                      }}
                     >
                       Send Ping
                     </button>
@@ -247,28 +259,104 @@ export default function ConstellationPage() {
       {/* Member Profile Card Modal */}
       {selectedMember && (
         <MemberProfileCard
-          member={{
-            id: selectedMember.id,
-            name: selectedMember.name,
-            email: selectedMember.email,
-            role: selectedMember.role || "Team Member",
-            starType: selectedMember.starType as StarType,
-            orbitalState: selectedMember.orbitalState as OrbitalState,
-            energyLevel: selectedMember.resonanceScore, // Using resonance as energy proxy
-            energySignatureColor: selectedMember.energySignatureColor,
-            stats: {
-              crystalsThisWeek: 0, // TODO: fetch real data
-              activeStreams: 0,
-              resonanceScore: selectedMember.resonanceScore,
-            },
-          }}
+            member={{
+              id: selectedMember.id,
+              name: selectedMember.name,
+              email: selectedMember.email,
+              role: selectedMember.role || "Team Member",
+              starType: selectedMember.starType as StarType,
+              orbitalState: selectedMember.orbitalState as OrbitalState,
+              energyLevel: selectedMember.currentEnergyLevel,
+              energySignatureColor: selectedMember.energySignatureColor,
+              stats: {
+                crystalsThisWeek: selectedMember.crystalsThisWeek ?? 0,
+                activeStreams: selectedMember.activeStreams ?? 0,
+                resonanceScore: selectedMember.resonanceScore,
+              },
+            }}
           onClose={() => setSelectedMember(null)}
           onPing={() => {
-            console.log("Ping", selectedMember.name);
-            // TODO: implement ping functionality
+            setShowPingModal(true);
           }}
           onInfuseEnergy={() => setShowInfusionModal(true)}
         />
+      )}
+
+      {/* Send Ping Modal */}
+      {showPingModal && selectedMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowPingModal(false)}>
+          <div className="absolute inset-0 bg-void-deep/80 backdrop-blur-sm" />
+          <div className="relative glass-panel p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-semibold text-text-bright mb-4">
+              Send Ping to {selectedMember.name}
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-text-muted mb-2">Ping Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['gentle', 'warm', 'direct'] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setPingType(type)}
+                      className={`px-3 py-2 text-sm rounded-lg capitalize transition-colors ${
+                        pingType === type
+                          ? 'bg-accent-primary/20 text-accent-primary border border-accent-primary/50'
+                          : 'bg-void-surface text-text-muted border border-void-atmosphere hover:text-text-bright'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-text-dim mt-2">
+                  {pingType === 'gentle' && 'Respects all orbital states • 72h expiry'}
+                  {pingType === 'warm' && 'Delivers when open • 24h expiry'}
+                  {pingType === 'direct' && 'Always immediate • 4h expiry'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm text-text-muted mb-1">Message (optional)</label>
+                <textarea
+                  value={pingMessage}
+                  onChange={(e) => setPingMessage(e.target.value)}
+                  placeholder="Quick check-in about..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-void-deep border border-void-atmosphere rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowPingModal(false)}
+                className="flex-1 px-4 py-2 border border-void-atmosphere rounded-lg text-text-muted hover:text-text-bright transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await sendPing({
+                      toUserId: selectedMember.id,
+                      type: pingType,
+                      message: pingMessage || undefined,
+                    });
+                    setShowPingModal(false);
+                    setPingMessage("");
+                    setSelectedMember(null);
+                    alert(`Ping sent to ${selectedMember.name}!`);
+                    refetch();
+                  } catch (error) {
+                    alert('Failed to send ping');
+                  }
+                }}
+                disabled={isSendingPing}
+                className="flex-1 px-4 py-2 bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+              >
+                {isSendingPing ? "Sending..." : "Send Ping"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Energy Infusion Modal */}

@@ -39,6 +39,13 @@ interface UserPreferences {
     reducedMotion: boolean;
     classicView: boolean;
   };
+  teamPulse: {
+    visible: boolean;
+    scale: number;
+    showLabel: boolean;
+    showRings: boolean;
+    showParticles: boolean;
+  };
 }
 
 const starTypes = [
@@ -99,13 +106,13 @@ function Toggle({
       </div>
       <button
         onClick={() => onChange(!enabled)}
-        className={`relative w-11 h-6 rounded-full transition-colors ${
+        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
           enabled ? "bg-accent-primary" : "bg-void-atmosphere"
         }`}
       >
         <span
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-            enabled ? "translate-x-6" : "translate-x-1"
+          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${
+            enabled ? "left-6" : "left-1"
           }`}
         />
       </button>
@@ -502,6 +509,96 @@ export default function SanctumPage() {
             </Section>
           )}
 
+          {/* Team Pulse Settings */}
+          {preferences && (
+            <Section 
+              title="Team Pulse" 
+              description="Customize the central team heartbeat display"
+            >
+              <div className="space-y-4">
+                <Toggle
+                  enabled={preferences.teamPulse?.visible ?? true}
+                  onChange={(value) => {
+                    updatePreferences("teamPulse", {
+                      ...getDefaultTeamPulseSettings(),
+                      ...preferences.teamPulse,
+                      visible: value,
+                    });
+                  }}
+                  label="Show Team Pulse"
+                  description="Display the central team energy orb"
+                />
+                
+                {(preferences.teamPulse?.visible ?? true) && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-text-muted mb-2">
+                        Size: {Math.round((preferences.teamPulse?.scale ?? 1) * 100)}%
+                      </label>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="2"
+                        step="0.1"
+                        value={preferences.teamPulse?.scale ?? 1}
+                        onChange={(e) => updatePreferences("teamPulse", {
+                          ...getDefaultTeamPulseSettings(),
+                          ...preferences.teamPulse,
+                          scale: parseFloat(e.target.value),
+                        })}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-text-dim mt-1">
+                        <span>Small</span>
+                        <span>Normal</span>
+                        <span>Large</span>
+                      </div>
+                    </div>
+
+                    <Toggle
+                      enabled={preferences.teamPulse?.showLabel ?? true}
+                      onChange={(value) => {
+                        updatePreferences("teamPulse", {
+                          ...getDefaultTeamPulseSettings(),
+                          ...preferences.teamPulse,
+                          showLabel: value,
+                        });
+                      }}
+                      label="Show Label"
+                      description="Display 'Team Pulse' text label"
+                    />
+
+                    <Toggle
+                      enabled={preferences.teamPulse?.showRings ?? true}
+                      onChange={(value) => {
+                        updatePreferences("teamPulse", {
+                          ...getDefaultTeamPulseSettings(),
+                          ...preferences.teamPulse,
+                          showRings: value,
+                        });
+                      }}
+                      label="Show Orbital Rings"
+                      description="Display the rotating rings around the core"
+                    />
+
+                    <Toggle
+                      enabled={preferences.teamPulse?.showParticles ?? true}
+                      onChange={(value) => {
+                        updatePreferences("teamPulse", {
+                          ...getDefaultTeamPulseSettings(),
+                          ...preferences.teamPulse,
+                          showParticles: value,
+                        });
+                      }}
+                      label="Show Particles"
+                      description="Display floating energy particles"
+                    />
+                  </>
+                )}
+              </div>
+            </Section>
+          )}
+
           {/* Accessibility */}
           {preferences && (
             <Section 
@@ -569,6 +666,16 @@ export default function SanctumPage() {
   );
 }
 
+function getDefaultTeamPulseSettings() {
+  return {
+    visible: true,
+    scale: 1,
+    showLabel: true,
+    showRings: true,
+    showParticles: true,
+  };
+}
+
 function getDefaultPreferences(): UserPreferences {
   return {
     dailyCheckInEnabled: true,
@@ -588,5 +695,6 @@ function getDefaultPreferences(): UserPreferences {
       reducedMotion: false,
       classicView: false,
     },
+    teamPulse: getDefaultTeamPulseSettings(),
   };
 }

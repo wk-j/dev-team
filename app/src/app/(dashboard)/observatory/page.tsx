@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useStreams, useWorkItems, useStream, useDiveMode, useUpdateWorkItem, useTeam } from "@/lib/api/hooks";
+import { useStreams, useWorkItems, useStream, useDiveMode, useUpdateWorkItem, useTeam, useMe } from "@/lib/api/hooks";
 import { useClassicView } from "@/lib/accessibility";
 import { ClassicView } from "@/components/ClassicView";
 import { ObservatoryGuide } from "@/components/canvas/ObservatoryGuide";
@@ -47,6 +47,9 @@ export default function ObservatoryPage() {
   const { data: team } = useTeam({
     pollInterval: 60000, // Refresh every minute
   });
+
+  // Fetch current user for preferences
+  const { data: currentUserData } = useMe();
 
   // Transform team members for canvas
   const teamMembers = useMemo(() => {
@@ -242,6 +245,7 @@ export default function ObservatoryPage() {
           onSurfaceFromStream={handleSurface}
           onWorkItemKindle={handleKindleWorkItem}
           onWorkItemStateChange={handleWorkItemStateChange}
+          teamPulseSettings={(currentUserData as any)?.preferences?.teamPulse}
         />
       </div>
 

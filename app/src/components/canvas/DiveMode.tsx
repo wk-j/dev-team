@@ -55,16 +55,30 @@ const stateTransitions: Record<EnergyState, { to: EnergyState; label: string; co
   crystallized: [],
 };
 
+// Get point on the stream path curve (must match DiveStreamPath)
+function getStreamPoint(t: number): [number, number, number] {
+  const x = (t - 0.5) * 50;
+  const y = Math.sin(t * Math.PI * 2) * 3;
+  const z = Math.cos(t * Math.PI) * 5 - 10;
+  return [x, y, z];
+}
+
 // Position work items along the stream path in dive mode
 function calculateItemPosition(
   streamPosition: number,
-  index: number
-): [number, number, number] {
-  // Create a flowing curve layout
-  const x = (streamPosition - 0.5) * 40; // -20 to 20
-  const y = Math.sin(streamPosition * Math.PI * 2) * 3 + (index % 3 - 1) * 2;
-  const z = Math.cos(streamPosition * Math.PI) * 5;
-  return [x, y, z];
+  _index: number,
+  total: number
+): { position: [number, number, number]; streamAnchor: [number, number, number] } {
+  // Get position on stream path
+  const streamPoint = getStreamPoint(streamPosition);
+  
+  // Offset items slightly above the stream for visibility
+  const yOffset = 2.5;
+  
+  return {
+    position: [streamPoint[0], streamPoint[1] + yOffset, streamPoint[2]],
+    streamAnchor: streamPoint,
+  };
 }
 
 // Ambient underwater-like particles for dive mode
@@ -325,10 +339,15 @@ export function DiveMode({
 
   // Calculate positions for work items
   const itemsWithPositions = useMemo(() => {
-    return workItems.map((item, index) => ({
-      ...item,
-      position: calculateItemPosition(item.streamPosition, index),
-    }));
+    const total = workItems.length;
+    return workItems.map((item, index) => {
+      const { position, streamAnchor } = calculateItemPosition(item.streamPosition, index, total);
+      return {
+        ...item,
+        position,
+        streamAnchor,
+      };
+    });
   }, [workItems]);
 
   // Calculate positions for divers - small, positioned at top-right of view
@@ -368,6 +387,38 @@ export function DiveMode({
       {/* Work items */}
       {itemsWithPositions.map((item) => (
         <group key={item.id}>
+          {/* Tether line connecting work item to stream */}
+          <Line
+            points={[item.position, item.streamAnchor]}
+            color={
+              item.energyState === "crystallized" ? "#06b6d4" :
+              item.energyState === "blazing" ? "#fbbf24" :
+              item.energyState === "kindling" ? "#f97316" :
+              item.energyState === "cooling" ? "#a78bfa" :
+              "#6b7280"
+            }
+            lineWidth={2}
+            transparent
+            opacity={0.5}
+            dashed
+            dashSize={0.3}
+            gapSize={0.2}
+          />
+          {/* Anchor point on stream */}
+          <mesh position={item.streamAnchor}>
+            <sphereGeometry args={[0.15, 8, 8]} />
+            <meshBasicMaterial
+              color={
+                item.energyState === "crystallized" ? "#06b6d4" :
+                item.energyState === "blazing" ? "#fbbf24" :
+                item.energyState === "kindling" ? "#f97316" :
+                item.energyState === "cooling" ? "#a78bfa" :
+                "#6b7280"
+              }
+              transparent
+              opacity={0.8}
+            />
+          </mesh>
           <EnergyOrb
             id={item.id}
             title={item.title}
@@ -532,6 +583,32 @@ export function DiveMode({
                     {selectedItem.description}
                   </p>
                 )}
+
+                {/* Depth indicator */}
+                <div className="flex items-center gap-2 mb-3 text-xs">
+                  <span className="text-text-muted">Depth:</span>
+                  <div className="flex gap-0.5">
+                    {(["shallow", "medium", "deep", "abyssal"] as const).map((d, i) => (
+                      <div
+                        key={d}
+                        className={`w-2 h-2 rounded-full ${
+                          ["shallow", "medium", "deep", "abyssal"].indexOf(selectedItem.depth) >= i
+                            ? selectedItem.depth === "shallow" ? "bg-sky-400"
+                              : selectedItem.depth === "medium" ? "bg-blue-400"
+                              : selectedItem.depth === "deep" ? "bg-indigo-400"
+                              : "bg-purple-400"
+                            : "bg-void-atmosphere"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`capitalize ${
+                    selectedItem.depth === "shallow" ? "text-sky-400"
+                    : selectedItem.depth === "medium" ? "text-blue-400"
+                    : selectedItem.depth === "deep" ? "text-indigo-400"
+                    : "text-purple-400"
+                  }`}>{selectedItem.depth}</span>
+                </div>
 
                 {/* State transition buttons */}
                 {availableTransitions.length > 0 && (

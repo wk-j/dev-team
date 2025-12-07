@@ -515,6 +515,13 @@ export interface UserPreferences {
     reducedMotion: boolean;
     classicView: boolean;
   };
+  teamPulse: {
+    visible: boolean;
+    scale: number; // 0.5 to 2.0
+    showLabel: boolean;
+    showRings: boolean;
+    showParticles: boolean;
+  };
 }
 
 export interface ConstellationLayout {

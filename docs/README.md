@@ -4,10 +4,38 @@
 
 ---
 
+## 🎯 Start Here (New Users)
+
+**First time with FlowState?** Read these guides in order:
+
+1. **[FLOWSTATE_EXPLAINED.md](00-getting-started/FLOWSTATE_EXPLAINED.md)** ⭐ **START HERE!**
+   - Complete explanation of how everything works
+   - All pages explained in plain English
+   - Work item lifecycle
+   - Step-by-step examples
+
+2. **[QUICK_START_GUIDE.md](00-getting-started/QUICK_START_GUIDE.md)**
+   - How to add work items (3 methods)
+   - Energy states explained
+   - CLI commands and scripts
+
+3. **[QUICK_REFERENCE.md](00-getting-started/QUICK_REFERENCE.md)**
+   - Quick cheat sheet
+   - Common actions
+   - Pages overview
+
+4. **[IMPLEMENTATION_COMPLETE.md](00-getting-started/IMPLEMENTATION_COMPLETE.md)**
+   - What features are working
+   - How to use each feature
+   - Files reference
+
+---
+
 ## Documentation Structure
 
 ```
 docs/
+├── 00-getting-started/   # 📚 START HERE - User guides
 ├── 01-overview/          # Project vision and foundations
 ├── 02-design/            # UI/UX design specifications
 ├── 03-architecture/      # Technical architecture
@@ -18,6 +46,14 @@ docs/
 ---
 
 ## Quick Links
+
+### 00 - Getting Started 🚀
+| Document | Description |
+|----------|-------------|
+| **[FLOWSTATE_EXPLAINED.md](00-getting-started/FLOWSTATE_EXPLAINED.md)** | **Complete guide - READ THIS FIRST!** |
+| [QUICK_START_GUIDE.md](00-getting-started/QUICK_START_GUIDE.md) | How to add work items |
+| [QUICK_REFERENCE.md](00-getting-started/QUICK_REFERENCE.md) | Quick reference cheat sheet |
+| [IMPLEMENTATION_COMPLETE.md](00-getting-started/IMPLEMENTATION_COMPLETE.md) | Features & functionality |
 
 ### 01 - Overview
 | Document | Description |

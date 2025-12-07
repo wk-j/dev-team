@@ -46,17 +46,27 @@ export function EnergyInfusionModal({
     if (!selectedItem) return;
 
     setIsInfusing(true);
+    setError(null);
     try {
-      const result = await api.handoffWorkItem(
+      const workItem = workItems.find(item => item.id === selectedItem);
+      
+      console.log(`[EnergyInfusion] Assigning work item ${selectedItem} to ${targetMember.name}`);
+      
+      // Assign the dormant work item to the target member
+      // This will kindle it and set them as the primary diver
+      const result = await api.assignWorkItem(
         selectedItem,
         targetMember.id,
-        `Energy infused by assignment`
+        `⚡ Energy infused! "${workItem?.title}" has been assigned to you.`
       );
+      
+      console.log('[EnergyInfusion] Assignment successful');
       onInfused(result.workItem);
       onClose();
     } catch (err) {
-      setError("Failed to infuse energy");
-      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to infuse energy";
+      console.error('[EnergyInfusion] Assignment failed:', errorMessage, err);
+      setError(errorMessage);
     } finally {
       setIsInfusing(false);
     }

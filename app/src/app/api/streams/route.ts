@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         eq(streams.teamId, membership.teamId),
         isNull(streams.evaporatedAt)
       ),
-      orderBy: (streams, { desc }) => [desc(streams.updatedAt)],
+      orderBy: (streams, { asc }) => [asc(streams.createdAt)],
     });
 
     // Get active divers for each stream

@@ -208,5 +208,12 @@ function getDefaultPreferences(): UserPreferences {
       reducedMotion: false,
       classicView: false,
     },
+    teamPulse: {
+      visible: true,
+      scale: 1,
+      showLabel: true,
+      showRings: true,
+      showParticles: true,
+    },
   };
 }

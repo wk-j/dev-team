@@ -16,6 +16,24 @@ interface TeamMember {
   lastActiveAt: string | null;
 }
 
+interface MemberActivity {
+  activeStreams: Array<{
+    id: string;
+    name: string;
+    divedAt: string;
+  }>;
+  activeWorkItems: Array<{
+    id: string;
+    title: string;
+    streamName: string;
+    energyState: string;
+    energyContributed: number;
+    isPrimary: boolean;
+  }>;
+  crystalsCompleted: number;
+  totalEnergyContributed: number;
+}
+
 interface TeamInvite {
   id: string;
   email: string;
@@ -66,6 +84,10 @@ export default function TeamPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteLinkModal, setShowInviteLinkModal] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [memberActivity, setMemberActivity] = useState<MemberActivity | null>(null);
+  const [isLoadingActivity, setIsLoadingActivity] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");

@@ -8,7 +8,7 @@ import {
   workItemContributors,
   users,
 } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, isNull } from "drizzle-orm";
 
 // GET /api/work-items - List work items (filter by stream, state, user)
 export async function GET(request: NextRequest) {
@@ -35,9 +35,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Get streams for user's team to filter work items
+    // Get active streams for user's team (exclude evaporated/deleted streams)
     const teamStreams = await db.query.streams.findMany({
-      where: eq(streams.teamId, membership.teamId),
+      where: and(
+        eq(streams.teamId, membership.teamId),
+        isNull(streams.evaporatedAt)
+      ),
       columns: { id: true },
     });
 
@@ -65,7 +68,7 @@ export async function GET(request: NextRequest) {
       items = items.filter((item) => item.primaryDiverId === userId);
     }
 
-    // Get contributors for each item
+    // Get contributors and assignee for each item
     const itemsWithContributors = await Promise.all(
       items.map(async (item) => {
         const contributors = await db
@@ -73,6 +76,7 @@ export async function GET(request: NextRequest) {
             id: users.id,
             name: users.name,
             avatarUrl: users.avatarUrl,
+            energySignatureColor: users.energySignatureColor,
             energyContributed: workItemContributors.energyContributed,
             isPrimary: workItemContributors.isPrimary,
           })
@@ -80,9 +84,25 @@ export async function GET(request: NextRequest) {
           .innerJoin(users, eq(workItemContributors.userId, users.id))
           .where(eq(workItemContributors.workItemId, item.id));
 
+        // Get assignee (primary diver) info
+        let assignee = null;
+        if (item.primaryDiverId) {
+          const assigneeData = await db.query.users.findFirst({
+            where: eq(users.id, item.primaryDiverId),
+            columns: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              energySignatureColor: true,
+            },
+          });
+          assignee = assigneeData ?? null;
+        }
+
         return {
           ...item,
           contributors,
+          assignee,
         };
       })
     );

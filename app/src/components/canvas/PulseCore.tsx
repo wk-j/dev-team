@@ -22,6 +22,14 @@ interface PulseCoreProps {
   position?: [number, number, number];
   /** Whether to show the tooltip on hover */
   showTooltip?: boolean;
+  /** Scale multiplier (0.5 to 2.0) */
+  scale?: number;
+  /** Whether to show the label */
+  showLabel?: boolean;
+  /** Whether to show orbital rings */
+  showRings?: boolean;
+  /** Whether to show particles */
+  showParticles?: boolean;
 }
 
 /**
@@ -41,6 +49,10 @@ export function PulseCore({
   harmonyScore,
   position = [0, 0, 0],
   showTooltip = true,
+  scale: scaleMultiplier = 1,
+  showLabel = true,
+  showRings = true,
+  showParticles = true,
 }: PulseCoreProps) {
   const coreRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
@@ -53,7 +65,7 @@ export function PulseCore({
   
   // Base scale based on team size and energy - REDUCED for better proportions
   // Core should be noticeable but not dominate the view
-  const baseScale = 1.2 + (activeMembers / Math.max(totalMembers, 1)) * 0.6; // Max ~1.8
+  const baseScale = (1.2 + (activeMembers / Math.max(totalMembers, 1)) * 0.6) * scaleMultiplier; // Max ~1.8 * multiplier
   
   // Color based on harmony (cyan at high harmony, shifting to purple at low)
   const coreColor = useMemo(() => {
@@ -223,70 +235,76 @@ export function PulseCore({
       </mesh>
 
       {/* Orbital rings */}
-      <group ref={ringsRef}>
-        {[0, 1, 2].map((i) => (
-          <mesh
-            key={i}
-            rotation={[
-              Math.PI / 2 + i * 0.3,
-              i * 0.5,
-              0
-            ]}
-            scale={baseScale}
-          >
-            <torusGeometry args={[1.5 + i * 0.3, 0.02, 16, 100]} />
-            <meshBasicMaterial
-              color={coreColor}
-              transparent
-              opacity={0.3 - i * 0.08}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-            />
-          </mesh>
-        ))}
-      </group>
+      {showRings && (
+        <group ref={ringsRef}>
+          {[0, 1, 2].map((i) => (
+            <mesh
+              key={i}
+              rotation={[
+                Math.PI / 2 + i * 0.3,
+                i * 0.5,
+                0
+              ]}
+              scale={baseScale}
+            >
+              <torusGeometry args={[1.5 + i * 0.3, 0.02, 16, 100]} />
+              <meshBasicMaterial
+                color={coreColor}
+                transparent
+                opacity={0.3 - i * 0.08}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+              />
+            </mesh>
+          ))}
+        </group>
+      )}
 
       {/* Orbital ring particles */}
-      <points rotation={[Math.PI / 2, 0, 0]}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[ringParticles.positions, 3]}
+      {showParticles && (
+        <points rotation={[Math.PI / 2, 0, 0]}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[ringParticles.positions, 3]}
+            />
+            <bufferAttribute
+              attach="attributes-color"
+              args={[ringParticles.colors, 3]}
+            />
+          </bufferGeometry>
+          <pointsMaterial
+            size={0.15}
+            vertexColors
+            transparent
+            opacity={0.8}
+            sizeAttenuation
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
           />
-          <bufferAttribute
-            attach="attributes-color"
-            args={[ringParticles.colors, 3]}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          size={0.15}
-          vertexColors
-          transparent
-          opacity={0.8}
-          sizeAttenuation
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
+        </points>
+      )}
 
       {/* Ambient energy particles */}
-      <points ref={particlesRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[ambientParticles.positions, 3]}
+      {showParticles && (
+        <points ref={particlesRef}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[ambientParticles.positions, 3]}
+            />
+          </bufferGeometry>
+          <pointsMaterial
+            size={0.1}
+            color={coreColor}
+            transparent
+            opacity={0.6}
+            sizeAttenuation
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
           />
-        </bufferGeometry>
-        <pointsMaterial
-          size={0.1}
-          color={coreColor}
-          transparent
-          opacity={0.6}
-          sizeAttenuation
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
+        </points>
+      )}
 
       {/* Point light for glow effect */}
       <pointLight
@@ -296,7 +314,7 @@ export function PulseCore({
       />
 
       {/* Persistent label - always visible */}
-      {!hovered.current && (
+      {showLabel && !hovered.current && (
         <Html
           position={[0, -baseScale * 1.5, 0]}
           center

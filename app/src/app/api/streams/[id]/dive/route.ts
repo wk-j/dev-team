@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { streams, teamMemberships, streamDivers, users } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -77,16 +77,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
         )
       );
 
-    // Create new dive record
-    const [dive] = await db
-      .insert(streamDivers)
-      .values({
-        streamId: id,
-        userId: session.user.id,
-        divedAt: new Date(),
-        surfacedAt: null,
-      })
-      .returning();
+    // Create new dive record using raw SQL to avoid Drizzle's default handling issue
+    const diveResult = await db.execute<{
+      id: string;
+      stream_id: string;
+      user_id: string;
+      dived_at: Date;
+      surfaced_at: Date | null;
+    }>(sql`
+      INSERT INTO stream_divers (stream_id, user_id, dived_at)
+      VALUES (${id}, ${session.user.id}, ${new Date().toISOString()})
+      RETURNING id, stream_id, user_id, dived_at, surfaced_at
+    `);
+    
+    const dive = diveResult[0];
 
     // Update user's orbital state to focused
     await db

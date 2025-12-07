@@ -13,6 +13,27 @@ const energyStates = {
   crystallized: { label: "Done", color: "text-cyan-400", bg: "bg-cyan-500/20", icon: "◇" },
 } as const;
 
+// Depth configuration
+const depthConfig = {
+  shallow: { label: "Shallow", color: "text-sky-400", bg: "bg-sky-500/20", icon: "~", description: "Quick task, < 1 hour" },
+  medium: { label: "Medium", color: "text-blue-400", bg: "bg-blue-500/20", icon: "≈", description: "Half-day task" },
+  deep: { label: "Deep", color: "text-indigo-400", bg: "bg-indigo-500/20", icon: "≋", description: "Full day or more" },
+  abyssal: { label: "Abyssal", color: "text-purple-400", bg: "bg-purple-500/20", icon: "◈", description: "Multi-day deep work" },
+} as const;
+
+type DepthType = keyof typeof depthConfig;
+
+// Stream state configuration
+const streamStateConfig = {
+  nascent: { label: "Nascent", color: "text-slate-400", bg: "bg-slate-500/20", description: "New stream, just created" },
+  flowing: { label: "Flowing", color: "text-cyan-400", bg: "bg-cyan-500/20", description: "Normal, healthy pace" },
+  rushing: { label: "Rushing", color: "text-yellow-400", bg: "bg-yellow-500/20", description: "High activity, fast moving" },
+  flooding: { label: "Flooding", color: "text-red-400", bg: "bg-red-500/20", description: "Overloaded, needs attention" },
+  stagnant: { label: "Stagnant", color: "text-gray-400", bg: "bg-gray-500/20", description: "Blocked or inactive" },
+} as const;
+
+type StreamStateType = keyof typeof streamStateConfig;
+
 // Valid state transitions
 const transitions: Record<string, { to: string; label: string; color: string }[]> = {
   dormant: [{ to: "kindling", label: "Start", color: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30" }],
@@ -32,6 +53,7 @@ export default function StreamsPage() {
   const { data: streams, isLoading, refetch } = useStreams({ pollInterval: 30000 });
   const { data: workItems, refetch: refetchWorkItems } = useWorkItems();
   const { createStream, isLoading: isCreating } = useCreateStream();
+  const { updateStream } = useUpdateStream();
   const { deleteStream } = useDeleteStream();
   const { createWorkItem } = useCreateWorkItem();
   const { updateWorkItem } = useUpdateWorkItem();
@@ -47,8 +69,12 @@ export default function StreamsPage() {
   const [assigningItem, setAssigningItem] = useState<WorkItem | null>(null);
   const [newStreamName, setNewStreamName] = useState("");
   const [newItemTitle, setNewItemTitle] = useState("");
+  const [newItemDepth, setNewItemDepth] = useState<DepthType>("medium");
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editDepth, setEditDepth] = useState<DepthType>("medium");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
 
   // Group work items by stream
@@ -59,7 +85,8 @@ export default function StreamsPage() {
   }, {} as Record<string, typeof workItems>) ?? {};
 
   const selectedStream = streams?.find(s => s.id === selectedStreamId);
-  const selectedItems = selectedStreamId ? itemsByStream[selectedStreamId] ?? [] : [];
+  const selectedItems = (selectedStreamId ? itemsByStream[selectedStreamId] ?? [] : [])
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const handleCreateStream = async () => {
     if (!newStreamName.trim()) return;
@@ -71,8 +98,9 @@ export default function StreamsPage() {
 
   const handleCreateItem = async () => {
     if (!newItemTitle.trim() || !selectedStreamId) return;
-    await createWorkItem({ streamId: selectedStreamId, title: newItemTitle, depth: "medium" });
+    await createWorkItem({ streamId: selectedStreamId, title: newItemTitle, depth: newItemDepth });
     setNewItemTitle("");
+    setNewItemDepth("medium");
     setShowCreateItem(false);
     refetchWorkItems();
     refetch();
@@ -88,17 +116,34 @@ export default function StreamsPage() {
     setEditingItem(item);
     setEditTitle(item.title);
     setEditDescription(item.description || "");
+    setEditDepth(item.depth as DepthType);
+    setEditTags(item.tags || []);
   };
 
   const handleSaveEdit = async () => {
     if (!editingItem || !editTitle.trim()) return;
     await updateWorkItem(editingItem.id, { 
       title: editTitle.trim(), 
-      description: editDescription.trim() || undefined 
+      description: editDescription.trim(), // Send empty string to clear, API converts to null
+      depth: editDepth,
+      tags: editTags,
     });
     setEditingItem(null);
+    setNewTag("");
     refetchWorkItems();
     refetch();
+  };
+
+  const handleAddTag = () => {
+    const tag = newTag.trim().toLowerCase();
+    if (tag && !editTags.includes(tag)) {
+      setEditTags([...editTags, tag]);
+    }
+    setNewTag("");
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setEditTags(editTags.filter(t => t !== tagToRemove));
   };
 
   const handleDeleteItem = async (itemId: string, title: string) => {
@@ -108,22 +153,18 @@ export default function StreamsPage() {
     refetch();
   };
 
-  const handleAssignItem = async (userId: string) => {
+  const handleAddContributor = async (userId: string) => {
     if (!assigningItem) return;
     setIsAssigning(true);
     try {
-      // Use assign for dormant items, handoff for active items
-      if (assigningItem.energyState === "dormant") {
-        await api.assignWorkItem(assigningItem.id, userId);
-      } else {
-        await api.handoffWorkItem(assigningItem.id, userId);
-      }
+      await api.addContributor(assigningItem.id, userId);
       setAssigningItem(null);
       refetchWorkItems();
       refetch();
-    } catch (error) {
-      console.error("Failed to assign/handoff:", error);
-      alert("Failed to assign work item");
+    } catch (error: unknown) {
+      console.error("Failed to add contributor:", error);
+      const message = error instanceof Error ? error.message : "Failed to add contributor";
+      alert(message);
     } finally {
       setIsAssigning(false);
     }
@@ -138,9 +179,10 @@ export default function StreamsPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
+    <div className="h-[calc(100vh-4rem)] flex justify-center">
+      <div className="flex w-full max-w-7xl">
       {/* Sidebar - Stream List */}
-      <div className="w-72 border-r border-void-atmosphere bg-void-deep/50 flex flex-col">
+      <div className="w-72 flex-shrink-0 border-r border-void-atmosphere bg-void-deep/50 flex flex-col">
         <div className="p-4 border-b border-void-atmosphere">
           <div className="flex items-center justify-between mb-1">
             <h1 className="text-lg font-semibold text-text-bright">Streams</h1>
@@ -171,11 +213,24 @@ export default function StreamsPage() {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`font-medium truncate ${isSelected ? "text-accent-primary" : "text-text-bright"}`}>
-                    {stream.name}
-                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    {/* Stream state indicator dot */}
+                    <span
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        stream.state === "flooding" ? "bg-red-500" :
+                        stream.state === "rushing" ? "bg-yellow-500" :
+                        stream.state === "flowing" ? "bg-cyan-500" :
+                        stream.state === "stagnant" ? "bg-gray-500" :
+                        "bg-slate-500"
+                      }`}
+                      title={streamStateConfig[stream.state as StreamStateType]?.label || stream.state}
+                    />
+                    <span className={`font-medium truncate ${isSelected ? "text-accent-primary" : "text-text-bright"}`}>
+                      {stream.name}
+                    </span>
+                  </div>
                   {active > 0 && (
-                    <span className="text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded">
+                    <span className="text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded flex-shrink-0">
                       {active}
                     </span>
                   )}
@@ -204,7 +259,43 @@ export default function StreamsPage() {
             <div className="p-4 border-b border-void-atmosphere bg-void-deep/30">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-text-bright">{selectedStream.name}</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-xl font-semibold text-text-bright">{selectedStream.name}</h2>
+                    {/* Stream State Selector */}
+                    <div className="relative group">
+                      <button
+                        className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
+                          streamStateConfig[selectedStream.state as StreamStateType]?.bg || "bg-gray-500/20"
+                        } ${
+                          streamStateConfig[selectedStream.state as StreamStateType]?.color || "text-gray-400"
+                        } border-current/30 hover:border-current/50`}
+                      >
+                        {streamStateConfig[selectedStream.state as StreamStateType]?.label || selectedStream.state}
+                      </button>
+                      {/* Dropdown */}
+                      <div className="absolute left-0 top-full mt-1 bg-void-deep border border-void-atmosphere rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 min-w-[160px]">
+                        {(Object.keys(streamStateConfig) as StreamStateType[]).map((state) => {
+                          const config = streamStateConfig[state];
+                          const isSelected = selectedStream.state === state;
+                          return (
+                            <button
+                              key={state}
+                              onClick={async () => {
+                                await updateStream(selectedStream.id, { state });
+                                refetch();
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-void-atmosphere transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                                isSelected ? "bg-void-atmosphere" : ""
+                              }`}
+                            >
+                              <div className={`font-medium ${config.color}`}>{config.label}</div>
+                              <div className="text-xs text-text-dim">{config.description}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                   <p className="text-sm text-text-dim mt-0.5">
                     {selectedItems.length} items · {selectedStream.crystalCount} completed
                   </p>
@@ -218,14 +309,14 @@ export default function StreamsPage() {
                   </button>
                   <button
                     onClick={async () => {
-                      if (!confirm(`Delete "${selectedStream.name}"?`)) return;
+                      if (!confirm(`Close "${selectedStream.name}"?\n\nThis will archive the stream and hide it from the Observatory. Work items will be preserved.`)) return;
                       await deleteStream(selectedStream.id);
                       setSelectedStreamId(null);
                       refetch();
                     }}
-                    className="px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm text-text-muted hover:text-text-bright hover:bg-void-atmosphere rounded-lg transition-colors"
                   >
-                    Delete
+                    Close Stream
                   </button>
                 </div>
               </div>
@@ -239,6 +330,8 @@ export default function StreamsPage() {
                     const state = energyStates[item.energyState as keyof typeof energyStates];
                     const availableTransitions = transitions[item.energyState] ?? [];
 
+                    const depth = depthConfig[item.depth as keyof typeof depthConfig];
+
                     return (
                       <div
                         key={item.id}
@@ -249,26 +342,66 @@ export default function StreamsPage() {
                             <div className="flex items-center gap-2">
                               <span className={state.color}>{state.icon}</span>
                               <h3 className="font-medium text-text-bright truncate">{item.title}</h3>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${depth.bg} ${depth.color}`} title={depth.description}>
+                                {depth.icon} {depth.label}
+                              </span>
                             </div>
                             {item.description && (
                               <p className="text-sm text-text-dim mt-1 line-clamp-1">{item.description}</p>
                             )}
+                            {/* Tags */}
+                            {item.tags && item.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {item.tags.map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="text-xs px-1.5 py-0.5 rounded bg-void-atmosphere text-text-muted"
+                                  >
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Contributors avatars */}
+                            {item.contributors && item.contributors.length > 0 && (
+                              <div className="flex -space-x-1.5">
+                                {item.contributors.slice(0, 4).map((contributor) => (
+                                  <div
+                                    key={contributor.id}
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+                                    style={{
+                                      backgroundColor: `${contributor.energySignatureColor}20`,
+                                      color: contributor.energySignatureColor,
+                                      border: `1px solid ${contributor.energySignatureColor}40`,
+                                    }}
+                                    title={`${contributor.name}${contributor.isPrimary ? ' (lead)' : ''}`}
+                                  >
+                                    {contributor.name.charAt(0)}
+                                  </div>
+                                ))}
+                                {item.contributors.length > 4 && (
+                                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 bg-void-atmosphere text-text-dim border border-void-surface">
+                                    +{item.contributors.length - 4}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <span className={`px-2 py-0.5 text-xs rounded ${state.bg} ${state.color}`}>
                               {state.label}
                             </span>
                             {/* Action buttons - visible on hover */}
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {/* Assign/Handoff - not available for crystallized items */}
+                              {/* Add contributor - not available for crystallized items */}
                               {item.energyState !== "crystallized" && (
                                 <button
                                   onClick={() => setAssigningItem(item)}
                                   className="p-1 text-text-dim hover:text-accent-primary hover:bg-accent-primary/10 rounded transition-colors"
-                                  title={item.energyState === "dormant" ? "Assign to team member" : "Hand off to team member"}
+                                  title="Add contributor"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                                   </svg>
                                 </button>
                               )}
@@ -336,6 +469,7 @@ export default function StreamsPage() {
           </div>
         )}
       </div>
+      </div>
 
       {/* Create Stream Modal */}
       {showCreateStream && (
@@ -373,20 +507,51 @@ export default function StreamsPage() {
       {/* Create Item Modal */}
       {showCreateItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowCreateItem(false)}>
-          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-text-bright mb-4">New Work Item</h2>
-            <input
-              type="text"
-              value={newItemTitle}
-              onChange={(e) => setNewItemTitle(e.target.value)}
-              placeholder="What needs to be done?"
-              className="w-full px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary"
-              autoFocus
-              onKeyDown={(e) => e.key === "Enter" && handleCreateItem()}
-            />
-            <div className="flex gap-2 mt-4">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-text-dim mb-1">Title</label>
+                <input
+                  type="text"
+                  value={newItemTitle}
+                  onChange={(e) => setNewItemTitle(e.target.value)}
+                  placeholder="What needs to be done?"
+                  className="w-full px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary"
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateItem()}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-text-dim mb-1">Depth</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(Object.keys(depthConfig) as DepthType[]).map((d) => {
+                    const config = depthConfig[d];
+                    const isSelected = newItemDepth === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setNewItemDepth(d)}
+                        className={`p-2 rounded-lg border text-center transition-colors ${
+                          isSelected
+                            ? `${config.bg} ${config.color} border-current`
+                            : "border-void-atmosphere text-text-dim hover:border-void-surface hover:text-text-muted"
+                        }`}
+                        title={config.description}
+                      >
+                        <div className="text-lg">{config.icon}</div>
+                        <div className="text-xs mt-0.5">{config.label}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-text-dim mt-1">{depthConfig[newItemDepth].description}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
               <button
-                onClick={() => setShowCreateItem(false)}
+                onClick={() => { setShowCreateItem(false); setNewItemDepth("medium"); }}
                 className="flex-1 px-3 py-2 text-sm border border-void-atmosphere rounded-lg text-text-dim hover:text-text-bright transition-colors"
               >
                 Cancel
@@ -406,7 +571,7 @@ export default function StreamsPage() {
       {/* Edit Item Modal */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setEditingItem(null)}>
-          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-text-bright mb-4">Edit Work Item</h2>
             <div className="space-y-4">
               <div>
@@ -430,10 +595,81 @@ export default function StreamsPage() {
                   className="w-full px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary resize-none"
                 />
               </div>
+              <div>
+                <label className="block text-sm text-text-dim mb-1">Depth</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(Object.keys(depthConfig) as DepthType[]).map((d) => {
+                    const config = depthConfig[d];
+                    const isSelected = editDepth === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setEditDepth(d)}
+                        className={`p-2 rounded-lg border text-center transition-colors ${
+                          isSelected
+                            ? `${config.bg} ${config.color} border-current`
+                            : "border-void-atmosphere text-text-dim hover:border-void-surface hover:text-text-muted"
+                        }`}
+                        title={config.description}
+                      >
+                        <div className="text-lg">{config.icon}</div>
+                        <div className="text-xs mt-0.5">{config.label}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-text-dim mt-1">{depthConfig[editDepth].description}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-text-dim mb-1">Tags</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Add a tag..."
+                    className="flex-1 px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    disabled={!newTag.trim()}
+                    className="px-3 py-2 text-sm bg-void-atmosphere border border-void-surface rounded-lg text-text-muted hover:text-text-bright hover:border-accent-primary/50 transition-colors disabled:opacity-50"
+                  >
+                    Add
+                  </button>
+                </div>
+                {editTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {editTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-void-atmosphere text-text-muted group"
+                      >
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="opacity-50 hover:opacity-100 hover:text-red-400 transition-opacity"
+                        >
+                          x
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 mt-6">
               <button
-                onClick={() => setEditingItem(null)}
+                onClick={() => { setEditingItem(null); setNewTag(""); }}
                 className="flex-1 px-3 py-2 text-sm border border-void-atmosphere rounded-lg text-text-dim hover:text-text-bright transition-colors"
               >
                 Cancel
@@ -455,17 +691,39 @@ export default function StreamsPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setAssigningItem(null)}>
           <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-text-bright mb-2">
-              {assigningItem.energyState === "dormant" ? "Assign Work Item" : "Hand Off Work Item"}
+              Add Contributor
             </h2>
             <p className="text-sm text-text-dim mb-4 truncate">"{assigningItem.title}"</p>
             
+            {/* Current contributors */}
+            {assigningItem.contributors && assigningItem.contributors.length > 0 && (
+              <div className="mb-4 pb-4 border-b border-void-atmosphere">
+                <div className="text-xs text-text-muted mb-2">Current contributors:</div>
+                <div className="flex flex-wrap gap-2">
+                  {assigningItem.contributors.map((c) => (
+                    <span
+                      key={c.id}
+                      className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full"
+                      style={{
+                        backgroundColor: `${c.energySignatureColor}20`,
+                        color: c.energySignatureColor,
+                      }}
+                    >
+                      {c.name}
+                      {c.isPrimary && <span className="opacity-60">(lead)</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {users
-                ?.filter(user => user.id !== currentUser?.id) // Filter out current user
+                ?.filter((user) => !assigningItem.contributors?.some((c) => c.id === user.id))
                 .map((user) => (
                 <button
                   key={user.id}
-                  onClick={() => handleAssignItem(user.id)}
+                  onClick={() => handleAddContributor(user.id)}
                   disabled={isAssigning}
                   className="w-full flex items-center gap-3 p-3 rounded-lg bg-void-atmosphere/50 hover:bg-void-atmosphere border border-transparent hover:border-accent-primary/30 transition-colors text-left disabled:opacity-50"
                 >
@@ -479,7 +737,10 @@ export default function StreamsPage() {
                     {user.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-text-bright truncate">{user.name}</div>
+                    <div className="text-sm font-medium text-text-bright truncate">
+                      {user.name}
+                      {user.id === currentUser?.id && <span className="text-text-muted ml-1">(you)</span>}
+                    </div>
                     <div className="text-xs text-text-dim truncate">{user.role || "Team Member"}</div>
                   </div>
                   <div
@@ -495,9 +756,9 @@ export default function StreamsPage() {
                 </button>
               ))}
               
-              {users && users.filter(u => u.id !== currentUser?.id).length === 0 && (
+              {users && users.filter((user) => !assigningItem.contributors?.some((c) => c.id === user.id)).length === 0 && (
                 <div className="text-center py-4 text-text-dim text-sm">
-                  No other team members to assign to
+                  All team members are already contributors
                 </div>
               )}
             </div>
@@ -506,7 +767,7 @@ export default function StreamsPage() {
               onClick={() => setAssigningItem(null)}
               className="w-full mt-4 px-3 py-2 text-sm border border-void-atmosphere rounded-lg text-text-dim hover:text-text-bright transition-colors"
             >
-              Cancel
+              Done
             </button>
           </div>
         </div>

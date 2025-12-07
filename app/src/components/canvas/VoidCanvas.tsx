@@ -125,19 +125,32 @@ interface VoidCanvasProps {
   // Accessibility & Performance
   reducedMotion?: boolean;
   particleDensity?: number;
+  // Team Pulse settings
+  teamPulseSettings?: {
+    visible?: boolean;
+    scale?: number;
+    showLabel?: boolean;
+    showRings?: boolean;
+    showParticles?: boolean;
+  };
 }
 
-// Transform API stream data to SIMPLE HORIZONTAL LANES
+// Transform API stream data to SIMPLE HORIZONTAL LANES - CENTERED
 function transformStreams(apiStreams: Stream[] | undefined) {
   if (!apiStreams || apiStreams.length === 0) {
     return [];
   }
 
   const { startX, endX, baseY, spacing, z } = LAYOUT.streams;
+  const totalStreams = apiStreams.length;
+  
+  // Calculate total height of all streams and center them
+  const totalHeight = (totalStreams - 1) * spacing;
+  const centerOffset = totalHeight / 2;
 
   return apiStreams.map((stream, index) => {
-    // Each stream is a simple horizontal line at different Y positions
-    const y = baseY - (index * spacing);
+    // Center streams vertically around baseY
+    const y = baseY - (index * spacing) + centerOffset;
     
     return {
       id: stream.id,
@@ -250,6 +263,7 @@ export function VoidCanvas({
   onWorkItemStateChange,
   reducedMotion = false,
   particleDensity = 1.0,
+  teamPulseSettings,
 }: VoidCanvasProps) {
   // Transform data
   const streams = useMemo(() => transformStreams(apiStreams), [apiStreams]);
@@ -316,10 +330,14 @@ export function VoidCanvas({
   }
 
   // Normal observatory view - simple horizontal layout
+  // Adjust camera Y position based on number of streams to keep content centered
+  const streamCount = streams.length;
+  const cameraY = streamCount > 0 ? 5 : 20; // Lower camera when there are streams
+  
   return (
     <div className={className}>
       <Canvas
-        camera={{ position: [0, 20, 50], fov: 50 }}
+        camera={{ position: [0, cameraY, 50], fov: 50 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
@@ -343,7 +361,7 @@ export function VoidCanvas({
           {/* ============================================ */}
           {/* ZONE 0: CORE - Central team pulse           */}
           {/* ============================================ */}
-          {showPulseCore && (
+          {showPulseCore && (teamPulseSettings?.visible ?? true) && (
             <PulseCore 
               position={LAYOUT.core.position}
               energyLevel={teamMetrics.energyLevel}
@@ -352,6 +370,10 @@ export function VoidCanvas({
               activeWorkItems={teamMetrics.activeWorkItems}
               completedToday={teamMetrics.completedToday}
               harmonyScore={teamMetrics.harmonyScore}
+              scale={teamPulseSettings?.scale}
+              showLabel={teamPulseSettings?.showLabel}
+              showRings={teamPulseSettings?.showRings}
+              showParticles={teamPulseSettings?.showParticles}
             />
           )}
 
