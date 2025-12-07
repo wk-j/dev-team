@@ -36,8 +36,24 @@ interface DiveModeProps {
   focusedItemId?: string | null;
   onItemClick?: (itemId: string) => void;
   onItemKindle?: (itemId: string) => void;
+  onStateChange?: (itemId: string, newState: EnergyState) => void;
   onSurface?: () => void;
 }
+
+// Valid state transitions
+const stateTransitions: Record<EnergyState, { to: EnergyState; label: string; color: string }[]> = {
+  dormant: [{ to: "kindling", label: "Start", color: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border-orange-500/50" }],
+  kindling: [
+    { to: "blazing", label: "Focus", color: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/50" },
+    { to: "dormant", label: "Pause", color: "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border-gray-500/50" },
+  ],
+  blazing: [{ to: "cooling", label: "Wind Down", color: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border-purple-500/50" }],
+  cooling: [
+    { to: "crystallized", label: "Complete", color: "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border-cyan-500/50" },
+    { to: "blazing", label: "Continue", color: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/50" },
+  ],
+  crystallized: [],
+};
 
 // Position work items along the stream path in dive mode
 function calculateItemPosition(
@@ -297,13 +313,15 @@ export function DiveMode({
   focusedItemId,
   onItemClick,
   onItemKindle,
+  onStateChange,
   onSurface,
 }: DiveModeProps) {
   const { camera } = useThree();
-  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  // Find focused item
-  const focusedItem = workItems.find((w) => w.id === focusedItemId);
+  // Find selected item
+  const selectedItem = workItems.find((w) => w.id === selectedItemId);
+  const availableTransitions = selectedItem ? stateTransitions[selectedItem.energyState] : [];
 
   // Calculate positions for work items
   const itemsWithPositions = useMemo(() => {
@@ -357,10 +375,10 @@ export function DiveMode({
             energyState={item.energyState}
             depth={item.depth}
             position={item.position}
-            onClick={() => onItemClick?.(item.id)}
+            onClick={() => setSelectedItemId(selectedItemId === item.id ? null : item.id)}
           />
-          {/* Highlight for focused item */}
-          {focusedItemId === item.id && (
+          {/* Highlight for selected item */}
+          {selectedItemId === item.id && (
             <mesh position={item.position}>
               <ringGeometry args={[2, 2.3, 32]} />
               <meshBasicMaterial
@@ -467,13 +485,83 @@ export function DiveMode({
             </div>
           )}
 
-          {/* Focused item panel */}
-          {focusedItem && (
+          {/* Selected item panel with state transitions */}
+          {selectedItem && (
             <div className="absolute bottom-4 right-4 pointer-events-auto">
-              <FocusedItemPanel
-                item={focusedItem}
-                onKindle={() => onItemKindle?.(focusedItem.id)}
-              />
+              <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl p-4 min-w-[280px] max-w-[320px]">
+                {/* Close button */}
+                <button
+                  onClick={() => setSelectedItemId(null)}
+                  className="absolute top-2 right-2 text-text-muted hover:text-text-bright transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3 pr-6">
+                  <h3 className="text-base font-medium text-text-bright leading-tight">
+                    {selectedItem.title}
+                  </h3>
+                </div>
+
+                {/* Current state badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-text-muted">Status:</span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      selectedItem.energyState === "crystallized"
+                        ? "bg-cyan-500/20 text-cyan-400"
+                        : selectedItem.energyState === "blazing"
+                        ? "bg-yellow-500/20 text-yellow-400"
+                        : selectedItem.energyState === "kindling"
+                        ? "bg-orange-500/20 text-orange-400"
+                        : selectedItem.energyState === "cooling"
+                        ? "bg-purple-500/20 text-purple-400"
+                        : "bg-gray-500/20 text-gray-400"
+                    }`}
+                  >
+                    {selectedItem.energyState === "crystallized" ? "Done" : selectedItem.energyState}
+                  </span>
+                </div>
+
+                {/* Description */}
+                {selectedItem.description && (
+                  <p className="text-sm text-text-dim mb-3 line-clamp-2">
+                    {selectedItem.description}
+                  </p>
+                )}
+
+                {/* State transition buttons */}
+                {availableTransitions.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs text-text-muted">Actions:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {availableTransitions.map((t) => (
+                        <button
+                          key={t.to}
+                          onClick={() => {
+                            onStateChange?.(selectedItem.id, t.to);
+                            setSelectedItemId(null);
+                          }}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${t.color}`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Completed message */}
+                {selectedItem.energyState === "crystallized" && (
+                  <div className="text-sm text-cyan-400 flex items-center gap-2">
+                    <span>◇</span>
+                    <span>This work has crystallized</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

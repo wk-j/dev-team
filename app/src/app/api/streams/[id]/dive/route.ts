@@ -39,8 +39,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if already diving in this stream
-    const existingDive = await db.query.streamDivers.findFirst({
+    // Check if already diving in this stream (active dive with no surfacedAt)
+    const existingActiveDive = await db.query.streamDivers.findFirst({
       where: and(
         eq(streamDivers.streamId, id),
         eq(streamDivers.userId, session.user.id),
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       ),
     });
 
-    if (existingDive) {
+    if (existingActiveDive) {
       return NextResponse.json(
         { error: "Already diving in this stream" },
         { status: 409 }
@@ -66,36 +66,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
         )
       );
 
-    // Check for existing (surfaced) dive record for this stream
-    const previousDive = await db.query.streamDivers.findFirst({
-      where: and(
-        eq(streamDivers.streamId, id),
-        eq(streamDivers.userId, session.user.id)
-      ),
-    });
+    // Delete any existing (surfaced) dive record for this stream to avoid unique constraint
+    await db
+      .delete(streamDivers)
+      .where(
+        and(
+          eq(streamDivers.streamId, id),
+          eq(streamDivers.userId, session.user.id)
+        )
+      );
 
-    let dive;
-    if (previousDive) {
-      // Update existing record to start new dive
-      [dive] = await db
-        .update(streamDivers)
-        .set({
-          divedAt: new Date(),
-          surfacedAt: null,
-        })
-        .where(eq(streamDivers.id, previousDive.id))
-        .returning();
-    } else {
-      // Create new dive record
-      [dive] = await db
-        .insert(streamDivers)
-        .values({
-          streamId: id,
-          userId: session.user.id,
-          divedAt: new Date(),
-        })
-        .returning();
-    }
+    // Create new dive record
+    const [dive] = await db
+      .insert(streamDivers)
+      .values({
+        streamId: id,
+        userId: session.user.id,
+        divedAt: new Date(),
+      })
+      .returning();
 
     // Update user's orbital state to focused
     await db

@@ -63,7 +63,7 @@ export default function ObservatoryPage() {
 
   // Dive mode hooks
   const { diveIntoStream, surfaceFromStream, isLoading: diveLoading } = useDiveMode();
-  const { kindleWorkItem } = useUpdateWorkItem();
+  const { kindleWorkItem, updateWorkItem } = useUpdateWorkItem();
 
   // Fetch stream details when diving
   const { data: streamDetails, refetch: refetchStreamDetails } = useStream(
@@ -140,6 +140,25 @@ export default function ObservatoryPage() {
       console.error("Failed to kindle:", error);
     }
   }, [kindleWorkItem, diveMode, refetchStreamDetails, refetchWorkItems]);
+
+  // Handle changing work item state
+  const handleWorkItemStateChange = useCallback(async (itemId: string, newState: string) => {
+    try {
+      await updateWorkItem(itemId, { energyState: newState as "dormant" | "kindling" | "blazing" | "cooling" | "crystallized" });
+      // Refresh data
+      refetchWorkItems();
+      refetchStreams();
+      // Update dive mode work items if active
+      if (diveMode) {
+        const updatedItems = workItems?.filter(w => w.streamId === diveMode.streamId).map(w => 
+          w.id === itemId ? { ...w, energyState: newState } : w
+        ) ?? [];
+        setDiveMode(prev => prev ? { ...prev, workItems: updatedItems as typeof prev.workItems } : null);
+      }
+    } catch (error) {
+      console.error("Failed to update work item state:", error);
+    }
+  }, [updateWorkItem, refetchWorkItems, refetchStreams, diveMode, workItems]);
 
   // Calculate metrics from real data
   const metrics = useMemo(() => {
@@ -222,6 +241,7 @@ export default function ObservatoryPage() {
           onDiveIntoStream={handleDiveIntoStream}
           onSurfaceFromStream={handleSurface}
           onWorkItemKindle={handleKindleWorkItem}
+          onWorkItemStateChange={handleWorkItemStateChange}
         />
       </div>
 

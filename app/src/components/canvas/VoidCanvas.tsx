@@ -121,6 +121,7 @@ interface VoidCanvasProps {
   onSurfaceFromStream?: () => void;
   onWorkItemClick?: (itemId: string) => void;
   onWorkItemKindle?: (itemId: string) => void;
+  onWorkItemStateChange?: (itemId: string, newState: EnergyState) => void;
   // Accessibility & Performance
   reducedMotion?: boolean;
   particleDensity?: number;
@@ -246,6 +247,7 @@ export function VoidCanvas({
   onSurfaceFromStream,
   onWorkItemClick,
   onWorkItemKindle,
+  onWorkItemStateChange,
   reducedMotion = false,
   particleDensity = 1.0,
 }: VoidCanvasProps) {
@@ -303,6 +305,7 @@ export function VoidCanvas({
               currentUserId={currentUserId}
               onSurface={onSurfaceFromStream}
               onItemClick={onWorkItemClick}
+              onStateChange={onWorkItemStateChange}
             />
             
             {showPerformance && <PerformanceMonitor />}
