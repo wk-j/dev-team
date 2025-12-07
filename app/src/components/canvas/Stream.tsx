@@ -174,7 +174,7 @@ export function StreamOriginStar({
   );
 }
 
-// Animated stream destination star - crystalline, collecting energy
+// Animated stream destination polygon - crystalline gem shape, collecting energy
 export function StreamDestinationStar({ 
   position, 
   color, 
@@ -190,9 +190,7 @@ export function StreamDestinationStar({
 }) {
   const coreRef = useRef<THREE.Mesh>(null);
   const outerRef = useRef<THREE.Mesh>(null);
-  const crystalRing1Ref = useRef<THREE.Mesh>(null);
-  const crystalRing2Ref = useRef<THREE.Mesh>(null);
-  const crystalRing3Ref = useRef<THREE.Mesh>(null);
+  const edgesRef = useRef<THREE.LineSegments>(null);
   const absorbParticlesRef = useRef<THREE.Points>(null);
   
   // Create absorbing particle positions (coming inward)
@@ -216,31 +214,26 @@ export function StreamDestinationStar({
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     
-    // Slow pulse for the core - more serene than origin
+    // Slow rotation for the polygon core
     if (coreRef.current) {
       const pulse = 1 + Math.sin(t * 1.5) * 0.1;
       coreRef.current.scale.setScalar(pulse);
-      coreRef.current.rotation.y = t * 0.5;
+      coreRef.current.rotation.x = t * 0.2;
+      coreRef.current.rotation.y = t * 0.4;
     }
     
-    // Outer shell breathes
+    // Outer glow breathes
     if (outerRef.current) {
       const breathe = 1 + Math.sin(t * 1) * 0.15;
       outerRef.current.scale.setScalar(breathe);
+      outerRef.current.rotation.x = t * 0.15;
+      outerRef.current.rotation.y = t * 0.25;
     }
     
-    // Crystal rings rotate slowly like a gyroscope
-    if (crystalRing1Ref.current) {
-      crystalRing1Ref.current.rotation.x = t * 0.2;
-      crystalRing1Ref.current.rotation.y = t * 0.3;
-    }
-    if (crystalRing2Ref.current) {
-      crystalRing2Ref.current.rotation.x = Math.PI / 2 + t * 0.25;
-      crystalRing2Ref.current.rotation.z = t * 0.15;
-    }
-    if (crystalRing3Ref.current) {
-      crystalRing3Ref.current.rotation.y = Math.PI / 2 + t * 0.18;
-      crystalRing3Ref.current.rotation.z = -t * 0.22;
+    // Edges rotate with core
+    if (edgesRef.current) {
+      edgesRef.current.rotation.x = t * 0.2;
+      edgesRef.current.rotation.y = t * 0.4;
     }
     
     // Particles spiral inward (absorbing effect)
@@ -274,74 +267,68 @@ export function StreamDestinationStar({
     return "#" + c.getHexString();
   }, [color]);
   
+  // Create edges geometry for the polygon wireframe (icosahedron = 20-sided gem)
+  const edgesGeometry = useMemo(() => {
+    const icoGeom = new THREE.IcosahedronGeometry(1.0, 0);
+    return new THREE.EdgesGeometry(icoGeom);
+  }, []);
+  
   return (
     <group position={position} scale={scale}>
-      {/* Outer ethereal glow */}
+      {/* Outer ethereal glow - polygon shaped, stronger than origin */}
       <mesh ref={outerRef}>
-        <sphereGeometry args={[1.6, 16, 16]} />
+        <icosahedronGeometry args={[1.8, 0]} />
         <meshBasicMaterial
           color={crystalColor}
           transparent
-          opacity={0.1 * intensity}
+          opacity={0.25 * intensity}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </mesh>
       
-      {/* Crystal ring 1 - like an atom */}
-      <mesh ref={crystalRing1Ref}>
-        <torusGeometry args={[1.2, 0.04, 8, 32]} />
-        <meshBasicMaterial
-          color={crystalColor}
-          transparent
-          opacity={0.5 * intensity}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-      
-      {/* Crystal ring 2 */}
-      <mesh ref={crystalRing2Ref}>
-        <torusGeometry args={[1.0, 0.035, 8, 32]} />
-        <meshBasicMaterial
-          color={crystalColor}
-          transparent
-          opacity={0.4 * intensity}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-      
-      {/* Crystal ring 3 */}
-      <mesh ref={crystalRing3Ref}>
-        <torusGeometry args={[1.4, 0.03, 8, 32]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.3 * intensity}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-      
-      {/* Core - diamond/crystal shape using octahedron */}
-      <mesh ref={coreRef}>
-        <octahedronGeometry args={[0.5, 0]} />
-        <meshBasicMaterial
-          color={crystalColor}
-          transparent
-          opacity={0.9}
-        />
-      </mesh>
-      
-      {/* Inner bright crystal core */}
+      {/* Secondary glow layer for more intensity */}
       <mesh>
-        <octahedronGeometry args={[0.25, 0]} />
+        <icosahedronGeometry args={[1.4, 0]} />
+        <meshBasicMaterial
+          color={crystalColor}
+          transparent
+          opacity={0.15 * intensity}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      
+      {/* Wireframe edges - faceted gem look, brighter */}
+      <lineSegments ref={edgesRef} geometry={edgesGeometry}>
+        <lineBasicMaterial
+          color={crystalColor}
+          transparent
+          opacity={0.8 * intensity}
+        />
+      </lineSegments>
+      
+      {/* Core polygon - more saturated */}
+      <mesh ref={coreRef}>
+        <icosahedronGeometry args={[0.6, 0]} />
+        <meshBasicMaterial
+          color={crystalColor}
+          transparent
+          opacity={0.95}
+        />
+      </mesh>
+      
+      {/* Inner bright core - larger and brighter */}
+      <mesh>
+        <icosahedronGeometry args={[0.35, 0]} />
         <meshBasicMaterial
           color="#ffffff"
           transparent
-          opacity={0.9}
+          opacity={1.0}
         />
       </mesh>
       
-      {/* Absorbing/spiraling particles */}
+      {/* Absorbing/spiraling particles - brighter */}
       <points ref={absorbParticlesRef}>
         <bufferGeometry>
           <bufferAttribute
@@ -350,24 +337,31 @@ export function StreamDestinationStar({
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.2}
+          size={0.25}
           color={crystalColor}
           transparent
-          opacity={0.25}
+          opacity={0.4}
           sizeAttenuation
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </points>
       
-      {/* Soft point light */}
+      {/* Strong point light - represents collected energy */}
       <pointLight
         color={crystalColor}
-        intensity={0.8 * intensity}
-        distance={5}
+        intensity={1.5 * intensity}
+        distance={8}
       />
       
-      {/* Crystal count indicator - small floating diamonds */}
+      {/* Secondary ambient glow */}
+      <pointLight
+        color="#ffffff"
+        intensity={0.5 * intensity}
+        distance={4}
+      />
+      
+      {/* Crystal count indicator - small floating gems */}
       {crystalCount > 0 && (
         <group>
           {Array.from({ length: Math.min(crystalCount, 5) }).map((_, i) => {
@@ -383,7 +377,7 @@ export function StreamDestinationStar({
                 ]}
                 scale={0.15}
               >
-                <octahedronGeometry args={[1, 0]} />
+                <icosahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial
                   color="#88ffff"
                   transparent

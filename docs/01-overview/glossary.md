@@ -48,6 +48,32 @@ Completed work. Energy has solidified into permanent value. Solid, reflective, a
 
 ---
 
+## Work Item Depth
+
+Work items have a depth level indicating their complexity and effort required:
+
+### Shallow
+Quick tasks that can be completed in a short time. Surface-level work.
+
+**Traditional equivalent**: "Small", "Quick win", "1 story point"
+
+### Medium
+Standard work items requiring moderate effort. The default depth.
+
+**Traditional equivalent**: "Medium", "3 story points"
+
+### Deep
+Complex work requiring significant focus and time. Multiple sessions needed.
+
+**Traditional equivalent**: "Large", "5 story points"
+
+### Abyssal
+Massive undertakings requiring extended deep work. Epic-level complexity.
+
+**Traditional equivalent**: "Epic", "8+ story points"
+
+---
+
 ## Workspace Elements
 
 ### Observatory
@@ -112,30 +138,30 @@ A numeric value (0-100) representing the strength of connection between two peop
 
 How available a person is for interaction:
 
-### Open Orbit
+### Open
 Default state. Available for pings, open to collaboration. Wide, welcoming aura around celestial body.
 
 **Traditional equivalent**: "Available", Online status
 
-### Deep Work Orbit
-Focused state. Minimizing interruptions, in flow. Protective shield visual, pings are queued.
+### Focused
+Light focus state. Working but still interruptible. Subtle glow indicates activity.
+
+**Traditional equivalent**: "Busy", "Working"
+
+### Deep Work
+Intense focus state. Minimizing interruptions, in flow. Protective shield visual, pings are queued.
 
 **Traditional equivalent**: "Do Not Disturb", Focus mode
 
-### Recovery Orbit
-Low energy state. Recharging, light work only. Dimmed appearance, slow pulse.
+### Away
+Away from keyboard or in a meeting. Dimmed appearance, slow pulse.
 
-**Traditional equivalent**: "Away", "In a meeting"
+**Traditional equivalent**: "Away", "In a meeting", "Out of Office"
 
-### Supernova Mode
+### Supernova
 Peak performance, shipping major work. Explosive visual, high energy output.
 
 **Traditional equivalent**: "Crushing it" (no real equivalent)
-
-### Eclipse
-Away from work entirely. Vacation, offline, out of office. Shadow overlay on celestial body.
-
-**Traditional equivalent**: "Out of Office", Offline
 
 ---
 
@@ -208,22 +234,39 @@ Bring back an evaporated stream if work needs to resume.
 
 ---
 
-## Stream Health
+## Stream States
 
-### Rushing
-High velocity, lots of activity. Fast-moving particles.
+Streams progress through different states based on activity and lifecycle:
+
+### Nascent
+A newly created stream that hasn't gained momentum yet. Dim, forming appearance with potential energy.
+
+**Traditional equivalent**: "New", "Draft project"
 
 ### Flowing
-Normal, healthy pace. Steady movement.
+Normal, healthy pace. Steady movement of particles along the stream path.
 
-### Stagnant
-Blocked or abandoned. Slow, murky appearance.
+**Traditional equivalent**: "Active", "In progress"
 
-### Frozen
-Intentionally paused. Ice crystal overlay.
+### Rushing
+High velocity, lots of activity. Fast-moving particles, bright glow.
+
+**Traditional equivalent**: "Hot", "High priority"
 
 ### Flooding
-Too much work, needs attention. Overflowing visual.
+Too much work, needs attention. Overflowing visual, warning indicators.
+
+**Traditional equivalent**: "Overloaded", "At risk"
+
+### Stagnant
+Blocked or abandoned. Slow, murky appearance, needs intervention.
+
+**Traditional equivalent**: "Blocked", "On hold"
+
+### Evaporated
+Archived or completed stream. Faded but remains searchable in history.
+
+**Traditional equivalent**: "Archived", "Closed"
 
 ---
 
@@ -330,4 +373,6 @@ Accessibility mode that minimizes or eliminates animations.
 | Message someone | Ping | Click member → Send Ping |
 | See overview | Observe | Return to Observatory |
 | Change settings | Enter Sanctum | Profile → Sanctum |
-| Go unavailable | Deep Work Orbit | Toggle orbital state |
+| Go unavailable | Deep Work | Toggle orbital state |
+| Archive stream | Evaporate | Stream menu → Evaporate |
+| Change stream status | Update State | Click state badge → Select new state |

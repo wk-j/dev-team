@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useStream, useStreams, useWorkItems, useUpdateWorkItem, useCreateWorkItem, useTeam, useMe } from "@/lib/api/hooks";
+import { useStream, useStreams, useWorkItems, useUpdateWorkItem, useCreateWorkItem, useUpdateStream, useTeam, useMe } from "@/lib/api/hooks";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
 import type { WorkItem as WorkItemType } from "@/lib/api/client";
@@ -92,22 +92,97 @@ function MetricCard({
   );
 }
 
+// Stream state config
+const streamStateConfig: Record<string, { bg: string; text: string; glow: string; color: string; label: string }> = {
+  nascent: { bg: "bg-gray-500/20", text: "text-gray-400", glow: "shadow-gray-500/20", color: "#6b7280", label: "Nascent" },
+  flowing: { bg: "bg-cyan-500/20", text: "text-cyan-400", glow: "shadow-cyan-500/30", color: "#00d4ff", label: "Flowing" },
+  rushing: { bg: "bg-yellow-500/20", text: "text-yellow-400", glow: "shadow-yellow-500/30", color: "#fbbf24", label: "Rushing" },
+  flooding: { bg: "bg-red-500/20", text: "text-red-400", glow: "shadow-red-500/30", color: "#ef4444", label: "Flooding" },
+  stagnant: { bg: "bg-slate-500/20", text: "text-slate-400", glow: "shadow-slate-500/20", color: "#64748b", label: "Stagnant" },
+  evaporated: { bg: "bg-gray-700/20", text: "text-gray-500", glow: "shadow-gray-700/20", color: "#374151", label: "Evaporated" },
+};
+
 // State badge with glow effect
 function StateBadge({ state, className = "" }: { state: string; className?: string }) {
-  const config: Record<string, { bg: string; text: string; glow: string }> = {
-    nascent: { bg: "bg-gray-500/20", text: "text-gray-400", glow: "shadow-gray-500/20" },
-    flowing: { bg: "bg-cyan-500/20", text: "text-cyan-400", glow: "shadow-cyan-500/30" },
-    rushing: { bg: "bg-yellow-500/20", text: "text-yellow-400", glow: "shadow-yellow-500/30" },
-    flooding: { bg: "bg-red-500/20", text: "text-red-400", glow: "shadow-red-500/30" },
-    stagnant: { bg: "bg-slate-500/20", text: "text-slate-400", glow: "shadow-slate-500/20" },
-    evaporated: { bg: "bg-gray-700/20", text: "text-gray-500", glow: "shadow-gray-700/20" },
-  };
-  const { bg, text, glow } = config[state] ?? config.flowing!;
+  const config = streamStateConfig[state] ?? streamStateConfig.flowing!;
   
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${bg} ${text} shadow-lg ${glow} ${className}`}>
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${config.bg} ${config.text} shadow-lg ${config.glow} ${className}`}>
       {state}
     </span>
+  );
+}
+
+// Stream State Dropdown
+function StreamStateDropdown({
+  currentState,
+  onChange,
+  isOpen,
+  onToggle,
+  disabled = false,
+}: {
+  currentState: string;
+  onChange: (newState: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+}) {
+  const states = ["nascent", "flowing", "rushing", "flooding", "stagnant", "evaporated"];
+  const config = streamStateConfig[currentState] ?? streamStateConfig.flowing!;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        disabled={disabled}
+        className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize flex items-center gap-1 transition-colors ${config.bg} ${config.text} shadow-lg ${config.glow} hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed`}
+        title="Change stream status"
+      >
+        {currentState}
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 w-36 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-lg shadow-2xl overflow-hidden z-50">
+          <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-text-muted border-b border-void-atmosphere">
+            Change Status
+          </div>
+          {states.map((state) => {
+            const stateConfig = streamStateConfig[state]!;
+            const isCurrentState = state === currentState;
+            return (
+              <button
+                key={state}
+                onClick={() => {
+                  if (!isCurrentState) {
+                    onChange(state);
+                  }
+                  onToggle();
+                }}
+                className={`w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 transition-colors ${
+                  isCurrentState
+                    ? "bg-accent-primary/10 text-accent-primary"
+                    : "text-text-muted hover:text-text-bright hover:bg-void-surface/50"
+                }`}
+              >
+                <span 
+                  className="w-2 h-2 rounded-full" 
+                  style={{ backgroundColor: stateConfig.color }} 
+                />
+                {stateConfig.label}
+                {isCurrentState && (
+                  <svg className="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -597,6 +672,7 @@ export default function StreamDetailPage() {
   const [sortOption, setSortOption] = useState<SortOption>("position");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showStreamStateDropdown, setShowStreamStateDropdown] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Fetch stream details
@@ -632,6 +708,9 @@ export default function StreamDetailPage() {
   // Work item actions
   const { kindleWorkItem, updateWorkItem } = useUpdateWorkItem();
   const { createWorkItem, isLoading: isCreating } = useCreateWorkItem();
+  
+  // Stream actions
+  const { updateStream, isLoading: isUpdatingStream } = useUpdateStream();
 
   // Create dive mode state from stream details
   const diveMode: DiveModeState | null = useMemo(() => {
@@ -764,6 +843,18 @@ export default function StreamDetailPage() {
     }
   }, [updateWorkItem, refetchStream, refetchWorkItems]);
 
+  // Handle changing stream state
+  const handleStreamStateChange = useCallback(async (newState: string) => {
+    try {
+      await updateStream(streamId, { state: newState as "nascent" | "flowing" | "rushing" | "flooding" | "stagnant" | "evaporated" });
+      setToastMessage(`Stream status changed to ${newState}`);
+      refetchStream();
+    } catch (error) {
+      console.error("Failed to update stream state:", error);
+      setToastMessage("Failed to update stream status");
+    }
+  }, [updateStream, streamId, refetchStream]);
+
   // Handle surface (go back to observatory)
   const handleSurface = useCallback(() => {
     router.push("/observatory");
@@ -859,7 +950,17 @@ export default function StreamDetailPage() {
             </Link>
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-base font-semibold text-text-bright truncate">{streamDetails.name}</h1>
-              <StateBadge state={streamDetails.state} />
+              <StreamStateDropdown
+                currentState={streamDetails.state}
+                onChange={handleStreamStateChange}
+                isOpen={showStreamStateDropdown}
+                onToggle={() => {
+                  setShowStreamStateDropdown(!showStreamStateDropdown);
+                  setShowFilterDropdown(false);
+                  setShowSortDropdown(false);
+                }}
+                disabled={isUpdatingStream}
+              />
             </div>
 
             {/* Compact Metrics */}
