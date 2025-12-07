@@ -406,6 +406,7 @@ interface StreamProps {
 }
 
 // Stream state visual configuration - softer, more organic appearance
+// Speed ranges from very slow (stagnant) to very fast (flooding)
 const streamConfig: Record<StreamState, {
   color: string;
   particleSpeed: number;
@@ -413,12 +414,12 @@ const streamConfig: Record<StreamState, {
   lineWidth: number;
   opacity: number;
 }> = {
-  nascent: { color: "#64748b", particleSpeed: 0.3, particleDensity: 0.4, lineWidth: 1.5, opacity: 0.5 },
-  flowing: { color: "#00d4ff", particleSpeed: 0.5, particleDensity: 0.7, lineWidth: 2, opacity: 0.6 },
-  rushing: { color: "#fbbf24", particleSpeed: 0.8, particleDensity: 0.9, lineWidth: 2.5, opacity: 0.7 },
-  flooding: { color: "#ef4444", particleSpeed: 1.0, particleDensity: 1.0, lineWidth: 3, opacity: 0.8 },
-  stagnant: { color: "#6b7280", particleSpeed: 0.05, particleDensity: 0.3, lineWidth: 1.5, opacity: 0.4 },
-  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 1, opacity: 0.3 },
+  nascent: { color: "#64748b", particleSpeed: 0.15, particleDensity: 0.4, lineWidth: 1.5, opacity: 0.5 },    // Slow, just starting
+  flowing: { color: "#00d4ff", particleSpeed: 0.4, particleDensity: 0.7, lineWidth: 2, opacity: 0.6 },      // Moderate pace
+  rushing: { color: "#fbbf24", particleSpeed: 0.9, particleDensity: 0.9, lineWidth: 2.5, opacity: 0.7 },    // Fast
+  flooding: { color: "#ef4444", particleSpeed: 1.5, particleDensity: 1.0, lineWidth: 3, opacity: 0.8 },     // Very fast, intense
+  stagnant: { color: "#6b7280", particleSpeed: 0.03, particleDensity: 0.3, lineWidth: 1.5, opacity: 0.4 },  // Almost stopped
+  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 1, opacity: 0.3 },     // No movement
 };
 
 export function Stream({ 
