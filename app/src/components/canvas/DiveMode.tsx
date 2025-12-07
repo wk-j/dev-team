@@ -171,34 +171,22 @@ function DiverAvatar({
   return (
     <group position={position}>
       <mesh ref={meshRef}>
-        <sphereGeometry args={[0.6, 16, 16]} />
+        <sphereGeometry args={[0.25, 12, 12]} />
         <meshBasicMaterial
           color={diver.energySignatureColor}
           transparent
-          opacity={isCurrentUser ? 1 : 0.7}
+          opacity={isCurrentUser ? 1 : 0.8}
         />
       </mesh>
       {/* Glow */}
       <mesh>
-        <sphereGeometry args={[0.9, 16, 16]} />
+        <sphereGeometry args={[0.4, 12, 12]} />
         <meshBasicMaterial
           color={diver.energySignatureColor}
           transparent
           opacity={0.2}
         />
       </mesh>
-      {/* Name label */}
-      <Html center distanceFactor={15} position={[0, 1.5, 0]}>
-        <div
-          className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-            isCurrentUser
-              ? "bg-accent-primary/20 text-accent-primary border border-accent-primary"
-              : "bg-void-deep/80 text-text-muted"
-          }`}
-        >
-          {isCurrentUser ? "You" : diver.name}
-        </div>
-      </Html>
     </group>
   );
 }
@@ -325,14 +313,14 @@ export function DiveMode({
     }));
   }, [workItems]);
 
-  // Calculate positions for divers
+  // Calculate positions for divers - small, positioned at top-right of view
   const diversWithPositions = useMemo(() => {
     return divers.map((diver, index) => ({
       ...diver,
       position: [
-        -15 + index * 5,
-        8,
-        5,
+        15 + index * 2,  // Right side, close together
+        10,              // Above the stream
+        -5,              // Behind the stream slightly
       ] as [number, number, number],
     }));
   }, [divers]);

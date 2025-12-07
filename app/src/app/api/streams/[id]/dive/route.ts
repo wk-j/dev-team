@@ -66,15 +66,36 @@ export async function POST(request: NextRequest, context: RouteContext) {
         )
       );
 
-    // Create new dive record
-    const [dive] = await db
-      .insert(streamDivers)
-      .values({
-        streamId: id,
-        userId: session.user.id,
-        divedAt: new Date(),
-      })
-      .returning();
+    // Check for existing (surfaced) dive record for this stream
+    const previousDive = await db.query.streamDivers.findFirst({
+      where: and(
+        eq(streamDivers.streamId, id),
+        eq(streamDivers.userId, session.user.id)
+      ),
+    });
+
+    let dive;
+    if (previousDive) {
+      // Update existing record to start new dive
+      [dive] = await db
+        .update(streamDivers)
+        .set({
+          divedAt: new Date(),
+          surfacedAt: null,
+        })
+        .where(eq(streamDivers.id, previousDive.id))
+        .returning();
+    } else {
+      // Create new dive record
+      [dive] = await db
+        .insert(streamDivers)
+        .values({
+          streamId: id,
+          userId: session.user.id,
+          divedAt: new Date(),
+        })
+        .returning();
+    }
 
     // Update user's orbital state to focused
     await db

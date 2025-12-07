@@ -42,17 +42,9 @@ const streamConfig: Record<StreamState, {
 function StreamHealthIndicator({ 
   position, 
   state, 
-  itemCount,
-  crystalCount = 0,
-  name,
-  isHovered,
 }: { 
   position: THREE.Vector3;
   state: StreamState;
-  itemCount: number;
-  crystalCount?: number;
-  name: string;
-  isHovered: boolean;
 }) {
   const indicatorRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
@@ -69,7 +61,7 @@ function StreamHealthIndicator({
     }
   });
 
-  // Calculate health percentage based on state and items
+  // Calculate health percentage based on state
   const healthPercent = state === "evaporated" ? 0 
     : state === "stagnant" ? 30
     : state === "flooding" ? 100
@@ -119,35 +111,7 @@ function StreamHealthIndicator({
         />
       </mesh>
 
-      {/* Info tooltip on hover */}
-      {isHovered && (
-        <Html 
-          center 
-          style={{ pointerEvents: "none" }}
-          zIndexRange={[1000, 1100]}
-        >
-          <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 pointer-events-none min-w-[180px] shadow-2xl">
-            <div className="text-base font-semibold text-text-bright mb-2">{name}</div>
-            <div className="flex items-center gap-2 text-sm">
-              <span 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: config.healthColor, boxShadow: `0 0 8px ${config.healthColor}` }}
-              />
-              <span className="text-text-muted">{config.healthLabel}</span>
-            </div>
-            <div className="mt-3 pt-3 border-t border-void-atmosphere grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <div className="text-text-bright font-medium">{itemCount}</div>
-                <div className="text-text-dim text-xs">Items</div>
-              </div>
-              <div>
-                <div className="text-energy-crystallized font-medium">{crystalCount}</div>
-                <div className="text-text-dim text-xs">Done</div>
-              </div>
-            </div>
-          </div>
-        </Html>
-      )}
+
     </group>
   );
 }
@@ -237,10 +201,6 @@ export function Stream({
         <StreamHealthIndicator
           position={startPosition}
           state={state}
-          itemCount={itemCount}
-          crystalCount={crystalCount}
-          name={name}
-          isHovered={isHovered}
         />
       )}
 

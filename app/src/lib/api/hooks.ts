@@ -131,6 +131,55 @@ export function useCreateStream() {
   return { createStream, isLoading, error };
 }
 
+export function useUpdateStream() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const updateStream = useCallback(
+    async (
+      id: string,
+      data: Partial<Pick<Stream, "name" | "description" | "state" | "velocity">>
+    ) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await api.updateStream(id, data);
+        return result;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  return { updateStream, isLoading, error };
+}
+
+export function useDeleteStream() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const deleteStream = useCallback(async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.deleteStream(id);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error("Unknown error");
+      setError(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { deleteStream, isLoading, error };
+}
+
 export function useCreateWorkItem() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -198,6 +247,27 @@ export function useUpdateWorkItem() {
   }, [updateWorkItem]);
 
   return { updateWorkItem, kindleWorkItem, crystallizeWorkItem, isLoading, error };
+}
+
+export function useDeleteWorkItem() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const deleteWorkItem = useCallback(async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.deleteWorkItem(id);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error("Unknown error");
+      setError(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { deleteWorkItem, isLoading, error };
 }
 
 // Dive mode hooks
@@ -353,4 +423,45 @@ export function useHandoffWorkItem() {
 export function useTeam(options?: UseDataOptions) {
   const fetcher = useCallback(() => api.getTeam(), []);
   return useData(fetcher, options);
+}
+
+// Users hooks
+export function useUsers(options?: UseDataOptions) {
+  const fetcher = useCallback(() => api.getUsers(), []);
+  return useData(fetcher, options);
+}
+
+export function useUser(id: string, options?: UseDataOptions) {
+  const fetcher = useCallback(() => api.getUser(id), [id]);
+  return useData(fetcher, { ...options, enabled: !!id });
+}
+
+export function useMe(options?: UseDataOptions) {
+  const fetcher = useCallback(() => api.getMe(), []);
+  return useData(fetcher, options);
+}
+
+export function useUpdateOrbitalState() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const updateOrbitalState = useCallback(
+    async (orbitalState: "open" | "focused" | "deep_work" | "away" | "supernova") => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await api.updateOrbitalState(orbitalState);
+        return result;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  return { updateOrbitalState, isLoading, error };
 }

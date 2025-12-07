@@ -22,6 +22,7 @@ export interface StreamDiver {
   avatarUrl: string | null;
   starType: string;
   orbitalState: string;
+  energySignatureColor: string;
   divedAt: string;
 }
 
@@ -232,6 +233,25 @@ class ApiClient {
     return this.fetch(`/work-items/${id}`, { method: "DELETE" });
   }
 
+  async assignWorkItem(
+    id: string,
+    toUserId: string,
+    message?: string
+  ): Promise<{
+    workItem: WorkItem;
+    assignment: {
+      from: { id: string; name: string; avatarUrl: string | null };
+      to: { id: string; name: string; avatarUrl: string | null };
+      message?: string;
+      assignedAt: string;
+    };
+  }> {
+    return this.fetch(`/work-items/${id}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ toUserId, message }),
+    });
+  }
+
   async handoffWorkItem(
     id: string,
     toUserId: string,
@@ -315,6 +335,87 @@ class ApiClient {
     }>;
   }> {
     return this.fetch("/team");
+  }
+
+  // Users - Team members with enhanced data (resonance, positions, etc.)
+  async getUsers(): Promise<Array<{
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+    role: string | null;
+    starType: "sun" | "giant" | "main_sequence" | "dwarf" | "neutron";
+    energySignatureColor: string;
+    orbitalState: "open" | "focused" | "deep_work" | "away" | "supernova";
+    positionX: number;
+    positionY: number;
+    positionZ: number;
+    currentEnergyLevel: number;
+    lastActiveAt: string | null;
+    createdAt: string;
+    membershipRole: string;
+    joinedAt: string;
+    resonanceScore: number | null;
+  }>> {
+    return this.fetch("/users");
+  }
+
+  async getUser(id: string): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+    role: string | null;
+    starType: "sun" | "giant" | "main_sequence" | "dwarf" | "neutron";
+    energySignatureColor: string;
+    orbitalState: "open" | "focused" | "deep_work" | "away" | "supernova";
+    positionX: number;
+    positionY: number;
+    positionZ: number;
+    currentEnergyLevel: number;
+    lastActiveAt: string | null;
+    createdAt: string;
+    membershipRole: string;
+    joinedAt: string;
+    stats: {
+      totalContributions: number;
+      resonanceScore: number;
+    };
+  }> {
+    return this.fetch(`/users/${id}`);
+  }
+
+  async updateOrbitalState(orbitalState: "open" | "focused" | "deep_work" | "away" | "supernova"): Promise<{
+    user: {
+      id: string;
+      orbitalState: string;
+    };
+    previousState: string;
+    message: string;
+  }> {
+    return this.fetch("/me/orbital-state", {
+      method: "PATCH",
+      body: JSON.stringify({ orbitalState }),
+    });
+  }
+
+  // Current user
+  async getMe(): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+    role: string | null;
+    starType: "sun" | "giant" | "main_sequence" | "dwarf" | "neutron";
+    energySignatureColor: string;
+    orbitalState: "open" | "focused" | "deep_work" | "away" | "supernova";
+    team: {
+      teamId: string;
+      role: string;
+      teamName: string;
+    } | null;
+  }> {
+    return this.fetch("/me");
   }
 }
 

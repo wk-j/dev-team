@@ -298,7 +298,7 @@ export function VoidCanvas({
                 avatarUrl: diver.avatarUrl,
                 starType: diver.starType,
                 orbitalState: diver.orbitalState,
-                energySignatureColor: "#00d4ff", // Default color if not provided
+                energySignatureColor: diver.energySignatureColor || "#00d4ff",
               }))}
               currentUserId={currentUserId}
               onSurface={onSurfaceFromStream}

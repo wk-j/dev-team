@@ -73,6 +73,11 @@ export default function ObservatoryPage() {
 
   // Handle diving into a stream
   const handleDiveIntoStream = useCallback(async (streamId: string) => {
+    // If already diving in this stream, ignore
+    if (diveMode?.streamId === streamId) {
+      return;
+    }
+
     try {
       const result = await diveIntoStream(streamId);
       
@@ -88,10 +93,24 @@ export default function ObservatoryPage() {
           divers: result.divers,
         });
       }
-    } catch (error) {
-      console.error("Failed to dive:", error);
+    } catch (error: unknown) {
+      // If already diving (409), just set the dive mode UI anyway
+      if (error instanceof Error && error.message === "Already diving in this stream") {
+        const stream = streams?.find(s => s.id === streamId);
+        if (stream) {
+          setDiveMode({
+            streamId: stream.id,
+            streamName: stream.name,
+            streamState: stream.state as StreamState,
+            workItems: workItems?.filter(w => w.streamId === streamId) ?? [],
+            divers: stream.divers,
+          });
+        }
+      } else {
+        console.error("Failed to dive:", error);
+      }
     }
-  }, [diveIntoStream, streams, workItems]);
+  }, [diveIntoStream, streams, workItems, diveMode?.streamId]);
 
   // Handle surfacing from a stream
   const handleSurface = useCallback(async () => {
@@ -386,23 +405,7 @@ export default function ObservatoryPage() {
         </>
       )}
 
-      {/* Dive mode indicator */}
-      {diveMode && (
-        <div className="absolute top-4 left-4 z-10 pointer-events-auto">
-          <div className="bg-void-deep/90 backdrop-blur-md border border-accent-primary/50 rounded-lg px-4 py-2">
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-accent-primary animate-pulse" />
-              <span className="text-sm text-text-bright">Diving: {diveMode.streamName}</span>
-              <button
-                onClick={handleSurface}
-                className="px-2 py-1 text-xs bg-void-atmosphere hover:bg-void-surface rounded transition-colors"
-              >
-                Surface
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Observatory Guide Modal */}
       <ObservatoryGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
