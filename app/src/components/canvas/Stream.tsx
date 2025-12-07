@@ -19,7 +19,7 @@ interface StreamProps {
   onClick?: () => void;
 }
 
-// Stream state visual configuration - increased visibility
+// Stream state visual configuration - softer, more organic appearance
 const streamConfig: Record<StreamState, {
   color: string;
   particleSpeed: number;
@@ -30,12 +30,12 @@ const streamConfig: Record<StreamState, {
   healthLabel: string;
   pulseSpeed: number;
 }> = {
-  nascent: { color: "#64748b", particleSpeed: 0.3, particleDensity: 0.3, lineWidth: 3, opacity: 0.7, healthColor: "#64748b", healthLabel: "New", pulseSpeed: 0 },
-  flowing: { color: "#00d4ff", particleSpeed: 0.5, particleDensity: 0.6, lineWidth: 4, opacity: 0.85, healthColor: "#10b981", healthLabel: "Healthy", pulseSpeed: 1 },
-  rushing: { color: "#fbbf24", particleSpeed: 0.8, particleDensity: 0.8, lineWidth: 5, opacity: 0.9, healthColor: "#fbbf24", healthLabel: "Active", pulseSpeed: 2 },
-  flooding: { color: "#ef4444", particleSpeed: 1.0, particleDensity: 1.0, lineWidth: 6, opacity: 1.0, healthColor: "#ef4444", healthLabel: "Overloaded", pulseSpeed: 3 },
-  stagnant: { color: "#6b7280", particleSpeed: 0.05, particleDensity: 0.2, lineWidth: 3, opacity: 0.6, healthColor: "#f97316", healthLabel: "Stagnant", pulseSpeed: 0.5 },
-  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 2, opacity: 0.4, healthColor: "#374151", healthLabel: "Archived", pulseSpeed: 0 },
+  nascent: { color: "#64748b", particleSpeed: 0.3, particleDensity: 0.4, lineWidth: 1.5, opacity: 0.5, healthColor: "#64748b", healthLabel: "New", pulseSpeed: 0 },
+  flowing: { color: "#00d4ff", particleSpeed: 0.5, particleDensity: 0.7, lineWidth: 2, opacity: 0.6, healthColor: "#10b981", healthLabel: "Healthy", pulseSpeed: 1 },
+  rushing: { color: "#fbbf24", particleSpeed: 0.8, particleDensity: 0.9, lineWidth: 2.5, opacity: 0.7, healthColor: "#fbbf24", healthLabel: "Active", pulseSpeed: 2 },
+  flooding: { color: "#ef4444", particleSpeed: 1.0, particleDensity: 1.0, lineWidth: 3, opacity: 0.8, healthColor: "#ef4444", healthLabel: "Overloaded", pulseSpeed: 3 },
+  stagnant: { color: "#6b7280", particleSpeed: 0.05, particleDensity: 0.3, lineWidth: 1.5, opacity: 0.4, healthColor: "#f97316", healthLabel: "Stagnant", pulseSpeed: 0.5 },
+  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 1, opacity: 0.3, healthColor: "#374151", healthLabel: "Archived", pulseSpeed: 0 },
 };
 
 // Stream health indicator component

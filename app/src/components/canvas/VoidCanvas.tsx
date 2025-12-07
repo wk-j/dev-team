@@ -136,7 +136,54 @@ interface VoidCanvasProps {
   };
 }
 
-// Transform API stream data to SIMPLE HORIZONTAL LANES - CENTERED
+// Generate organic flowing curve points for a stream
+function generateFlowingPath(
+  startX: number,
+  endX: number,
+  baseY: number,
+  z: number,
+  seed: number // Use stream index as seed for consistent but varied curves
+): Array<{ x: number; y: number; z: number }> {
+  const points: Array<{ x: number; y: number; z: number }> = [];
+  const numPoints = 6; // More points = smoother curve
+  const width = endX - startX;
+  
+  // Seeded random-like function for consistent curves
+  const seededRandom = (n: number) => {
+    const x = Math.sin(seed * 9999 + n * 7777) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  for (let i = 0; i < numPoints; i++) {
+    const t = i / (numPoints - 1);
+    const x = startX + t * width;
+    
+    // Create gentle wave pattern with some randomness
+    // Main wave
+    const wave1 = Math.sin(t * Math.PI * 2 + seed) * 1.5;
+    // Secondary smaller wave
+    const wave2 = Math.sin(t * Math.PI * 4 + seed * 2) * 0.5;
+    // Random variation per point
+    const randomOffset = (seededRandom(i) - 0.5) * 1.0;
+    
+    // Combine waves with dampening at edges (so streams start/end smoothly)
+    const edgeDampen = Math.sin(t * Math.PI); // 0 at edges, 1 in middle
+    const yOffset = (wave1 + wave2 + randomOffset) * edgeDampen;
+    
+    // Slight z variation for depth
+    const zOffset = Math.sin(t * Math.PI * 1.5 + seed * 0.5) * 0.5 * edgeDampen;
+    
+    points.push({
+      x,
+      y: baseY + yOffset,
+      z: z + zOffset,
+    });
+  }
+  
+  return points;
+}
+
+// Transform API stream data to ORGANIC FLOWING CURVES - CENTERED
 function transformStreams(apiStreams: Stream[] | undefined) {
   if (!apiStreams || apiStreams.length === 0) {
     return [];
@@ -153,19 +200,19 @@ function transformStreams(apiStreams: Stream[] | undefined) {
     // Center streams vertically around baseY
     const y = baseY - (index * spacing) + centerOffset;
     
+    // Use stream id hash as seed for consistent curves
+    const seed = stream.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    
     return {
       id: stream.id,
       name: stream.name,
-      // Simple straight horizontal line from left to right
-      pathPoints: [
-        { x: startX, y, z },
-        { x: endX, y, z },
-      ],
+      // Generate organic flowing path
+      pathPoints: generateFlowingPath(startX, endX, y, z, seed + index),
       state: stream.state as StreamState,
       velocity: stream.velocity,
       itemCount: stream.itemCount,
       crystalCount: stream.crystalCount,
-      // Store Y position for work item placement
+      // Store Y position for work item placement (use base Y, not curved)
       laneY: y,
     };
   });

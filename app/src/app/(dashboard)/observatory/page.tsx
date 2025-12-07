@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useStreams, useWorkItems, useStream, useDiveMode, useUpdateWorkItem, useTeam, useMe } from "@/lib/api/hooks";
 import { useClassicView } from "@/lib/accessibility";
@@ -26,6 +27,7 @@ const VoidCanvas = dynamic(
 );
 
 export default function ObservatoryPage() {
+  const router = useRouter();
   const [showPerformance, setShowPerformance] = useState(false);
   const [showStats, setShowStats] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
@@ -74,28 +76,12 @@ export default function ObservatoryPage() {
     { enabled: !!diveMode?.streamId }
   );
 
-  // Handle viewing stream details (no database write - just UI state change)
+  // Handle viewing stream details - navigate to dedicated page
   const handleDiveIntoStream = useCallback((streamId: string) => {
-    // If already viewing this stream, ignore
-    if (diveMode?.streamId === streamId) {
-      return;
-    }
+    router.push(`/streams/${streamId}`);
+  }, [router]);
 
-    // Find the stream from our list
-    const stream = streams?.find(s => s.id === streamId);
-    
-    if (stream) {
-      setDiveMode({
-        streamId: stream.id,
-        streamName: stream.name,
-        streamState: stream.state as StreamState,
-        workItems: workItems?.filter(w => w.streamId === streamId) ?? [],
-        divers: stream.divers ?? [],
-      });
-    }
-  }, [streams, workItems, diveMode?.streamId]);
-
-  // Handle exiting stream detail view (just UI state change)
+  // Handle exiting stream detail view (not used in observatory anymore, kept for interface)
   const handleSurface = useCallback(() => {
     setDiveMode(null);
   }, []);
