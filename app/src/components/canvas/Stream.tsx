@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Line, Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -15,7 +15,6 @@ interface StreamProps {
   velocity: number;
   itemCount: number;
   crystalCount?: number;
-  showHealthIndicator?: boolean;
   onClick?: () => void;
 }
 
@@ -26,95 +25,14 @@ const streamConfig: Record<StreamState, {
   particleDensity: number;
   lineWidth: number;
   opacity: number;
-  healthColor: string;
-  healthLabel: string;
-  pulseSpeed: number;
 }> = {
-  nascent: { color: "#64748b", particleSpeed: 0.3, particleDensity: 0.4, lineWidth: 1.5, opacity: 0.5, healthColor: "#64748b", healthLabel: "New", pulseSpeed: 0 },
-  flowing: { color: "#00d4ff", particleSpeed: 0.5, particleDensity: 0.7, lineWidth: 2, opacity: 0.6, healthColor: "#10b981", healthLabel: "Healthy", pulseSpeed: 1 },
-  rushing: { color: "#fbbf24", particleSpeed: 0.8, particleDensity: 0.9, lineWidth: 2.5, opacity: 0.7, healthColor: "#fbbf24", healthLabel: "Active", pulseSpeed: 2 },
-  flooding: { color: "#ef4444", particleSpeed: 1.0, particleDensity: 1.0, lineWidth: 3, opacity: 0.8, healthColor: "#ef4444", healthLabel: "Overloaded", pulseSpeed: 3 },
-  stagnant: { color: "#6b7280", particleSpeed: 0.05, particleDensity: 0.3, lineWidth: 1.5, opacity: 0.4, healthColor: "#f97316", healthLabel: "Stagnant", pulseSpeed: 0.5 },
-  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 1, opacity: 0.3, healthColor: "#374151", healthLabel: "Archived", pulseSpeed: 0 },
+  nascent: { color: "#64748b", particleSpeed: 0.3, particleDensity: 0.4, lineWidth: 1.5, opacity: 0.5 },
+  flowing: { color: "#00d4ff", particleSpeed: 0.5, particleDensity: 0.7, lineWidth: 2, opacity: 0.6 },
+  rushing: { color: "#fbbf24", particleSpeed: 0.8, particleDensity: 0.9, lineWidth: 2.5, opacity: 0.7 },
+  flooding: { color: "#ef4444", particleSpeed: 1.0, particleDensity: 1.0, lineWidth: 3, opacity: 0.8 },
+  stagnant: { color: "#6b7280", particleSpeed: 0.05, particleDensity: 0.3, lineWidth: 1.5, opacity: 0.4 },
+  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 1, opacity: 0.3 },
 };
-
-// Stream health indicator component
-function StreamHealthIndicator({ 
-  position, 
-  state, 
-}: { 
-  position: THREE.Vector3;
-  state: StreamState;
-}) {
-  const indicatorRef = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
-  const config = streamConfig[state];
-  
-  // Animate the health indicator
-  useFrame(({ clock }) => {
-    if (indicatorRef.current && config.pulseSpeed > 0) {
-      const pulse = Math.sin(clock.getElapsedTime() * config.pulseSpeed) * 0.1 + 1;
-      indicatorRef.current.scale.setScalar(pulse);
-    }
-    if (ringRef.current) {
-      ringRef.current.rotation.z += 0.01 * config.pulseSpeed;
-    }
-  });
-
-  // Calculate health percentage based on state
-  const healthPercent = state === "evaporated" ? 0 
-    : state === "stagnant" ? 30
-    : state === "flooding" ? 100
-    : state === "rushing" ? 80
-    : state === "flowing" ? 60
-    : 20;
-
-  return (
-    <group position={position}>
-      {/* Central orb */}
-      <mesh ref={indicatorRef}>
-        <sphereGeometry args={[0.8, 16, 16]} />
-        <meshBasicMaterial 
-          color={config.healthColor} 
-          transparent 
-          opacity={0.6}
-        />
-      </mesh>
-      
-      {/* Outer ring */}
-      <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.2, 0.1, 8, 32]} />
-        <meshBasicMaterial 
-          color={config.color} 
-          transparent 
-          opacity={0.4}
-        />
-      </mesh>
-
-      {/* Glow effect */}
-      <mesh>
-        <sphereGeometry args={[1.5, 16, 16]} />
-        <meshBasicMaterial 
-          color={config.healthColor} 
-          transparent 
-          opacity={0.15}
-        />
-      </mesh>
-
-      {/* Health bar arc */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.5, 0.15, 8, 32, (healthPercent / 100) * Math.PI * 2]} />
-        <meshBasicMaterial 
-          color={config.healthColor} 
-          transparent 
-          opacity={0.8}
-        />
-      </mesh>
-
-
-    </group>
-  );
-}
 
 export function Stream({ 
   id, 
@@ -124,11 +42,9 @@ export function Stream({
   velocity, 
   itemCount, 
   crystalCount = 0,
-  showHealthIndicator = true,
   onClick 
 }: StreamProps) {
   const particlesRef = useRef<THREE.Points>(null);
-  const [isHovered, setIsHovered] = useState(false);
   const config = streamConfig[state];
 
   // Create smooth curve from path points
@@ -191,36 +107,24 @@ export function Stream({
   const startPosition = useMemo(() => curve.getPoint(0), [curve]);
 
   return (
-    <group 
-      onClick={onClick}
-      onPointerEnter={() => setIsHovered(true)}
-      onPointerLeave={() => setIsHovered(false)}
-    >
-      {/* Health indicator at stream start - only on hover to reduce clutter */}
-      {showHealthIndicator && isHovered && (
-        <StreamHealthIndicator
-          position={startPosition}
-          state={state}
-        />
-      )}
-
+    <group onClick={onClick}>
       {/* Stream start point indicator - small orb at beginning */}
       <mesh position={startPosition}>
-        <sphereGeometry args={[0.5, 12, 12]} />
+        <sphereGeometry args={[0.3, 12, 12]} />
         <meshBasicMaterial
           color={config.color}
           transparent
-          opacity={0.8}
+          opacity={0.6}
         />
       </mesh>
 
-      {/* Main stream path - BOLD and visible */}
+      {/* Main stream path */}
       <Line
         points={curvePoints}
         color={config.color}
-        lineWidth={isHovered ? config.lineWidth * 1.5 : config.lineWidth}
+        lineWidth={config.lineWidth}
         transparent
-        opacity={isHovered ? 1 : config.opacity}
+        opacity={config.opacity}
       />
 
       {/* Stream glow (wider, more transparent) */}
@@ -241,7 +145,7 @@ export function Stream({
           />
         </bufferGeometry>
         <pointsMaterial
-          size={isHovered ? 0.6 : 0.4}
+          size={0.4}
           color={config.color}
           transparent
           opacity={0.8}
@@ -309,11 +213,10 @@ interface StreamsViewProps {
     itemCount: number;
     crystalCount?: number;
   }>;
-  showHealthIndicators?: boolean;
   onStreamClick?: (streamId: string) => void;
 }
 
-export function StreamsView({ streams, showHealthIndicators = true, onStreamClick }: StreamsViewProps) {
+export function StreamsView({ streams, onStreamClick }: StreamsViewProps) {
   // Sort streams by state priority (flooding/rushing first, then flowing, etc.)
   // This ensures important streams are rendered on top
   const stateOrder: Record<StreamState, number> = {
@@ -341,7 +244,6 @@ export function StreamsView({ streams, showHealthIndicators = true, onStreamClic
           velocity={stream.velocity}
           itemCount={stream.itemCount}
           crystalCount={stream.crystalCount}
-          showHealthIndicator={showHealthIndicators}
           onClick={() => onStreamClick?.(stream.id)}
         />
       ))}
