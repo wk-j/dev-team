@@ -39,22 +39,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if already diving in this stream (active dive with no surfacedAt)
-    const existingActiveDive = await db.query.streamDivers.findFirst({
-      where: and(
-        eq(streamDivers.streamId, id),
-        eq(streamDivers.userId, session.user.id),
-        isNull(streamDivers.surfacedAt)
-      ),
-    });
-
-    if (existingActiveDive) {
-      return NextResponse.json(
-        { error: "Already diving in this stream" },
-        { status: 409 }
-      );
-    }
-
     // Surface from any other streams first (can only dive in one stream at a time)
     await db
       .update(streamDivers)
@@ -66,18 +50,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         )
       );
 
-    // Delete any existing dive records for this stream to avoid unique constraint
-    // This includes both surfaced and active dives (in case of data inconsistency)
-    await db
-      .delete(streamDivers)
-      .where(
-        and(
-          eq(streamDivers.streamId, id),
-          eq(streamDivers.userId, session.user.id)
-        )
-      );
-
-    // Create new dive record using raw SQL to avoid Drizzle's default handling issue
+    // Use UPSERT to handle the unique constraint properly
+    // If a record exists for this stream/user, update it to be an active dive
+    // If no record exists, insert a new one
     const diveResult = await db.execute<{
       id: string;
       stream_id: string;
@@ -85,8 +60,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       dived_at: Date;
       surfaced_at: Date | null;
     }>(sql`
-      INSERT INTO stream_divers (stream_id, user_id, dived_at)
-      VALUES (${id}, ${session.user.id}, ${new Date().toISOString()})
+      INSERT INTO stream_divers (stream_id, user_id, dived_at, surfaced_at)
+      VALUES (${id}, ${session.user.id}, NOW(), NULL)
+      ON CONFLICT (stream_id, user_id) 
+      DO UPDATE SET dived_at = NOW(), surfaced_at = NULL
       RETURNING id, stream_id, user_id, dived_at, surfaced_at
     `);
     
