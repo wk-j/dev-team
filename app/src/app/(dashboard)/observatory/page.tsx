@@ -74,61 +74,31 @@ export default function ObservatoryPage() {
     { enabled: !!diveMode?.streamId }
   );
 
-  // Handle diving into a stream
-  const handleDiveIntoStream = useCallback(async (streamId: string) => {
-    // If already diving in this stream, ignore
+  // Handle viewing stream details (no database write - just UI state change)
+  const handleDiveIntoStream = useCallback((streamId: string) => {
+    // If already viewing this stream, ignore
     if (diveMode?.streamId === streamId) {
       return;
     }
 
-    try {
-      const result = await diveIntoStream(streamId);
-      
-      // Find the stream from our list
-      const stream = streams?.find(s => s.id === streamId);
-      
-      if (stream) {
-        setDiveMode({
-          streamId: stream.id,
-          streamName: stream.name,
-          streamState: stream.state as StreamState,
-          workItems: workItems?.filter(w => w.streamId === streamId) ?? [],
-          divers: result.divers,
-        });
-      }
-    } catch (error: unknown) {
-      // If already diving (409), just set the dive mode UI anyway
-      if (error instanceof Error && error.message === "Already diving in this stream") {
-        const stream = streams?.find(s => s.id === streamId);
-        if (stream) {
-          setDiveMode({
-            streamId: stream.id,
-            streamName: stream.name,
-            streamState: stream.state as StreamState,
-            workItems: workItems?.filter(w => w.streamId === streamId) ?? [],
-            divers: stream.divers,
-          });
-        }
-      } else {
-        console.error("Failed to dive:", error);
-      }
-    }
-  }, [diveIntoStream, streams, workItems, diveMode?.streamId]);
-
-  // Handle surfacing from a stream
-  const handleSurface = useCallback(async () => {
-    if (!diveMode?.streamId) return;
+    // Find the stream from our list
+    const stream = streams?.find(s => s.id === streamId);
     
-    try {
-      await surfaceFromStream(diveMode.streamId);
-      setDiveMode(null);
-      // Refresh data after surfacing
-      refetchStreams();
-      refetchWorkItems();
-    } catch (error) {
-      console.error("Failed to surface:", error);
+    if (stream) {
+      setDiveMode({
+        streamId: stream.id,
+        streamName: stream.name,
+        streamState: stream.state as StreamState,
+        workItems: workItems?.filter(w => w.streamId === streamId) ?? [],
+        divers: stream.divers ?? [],
+      });
     }
-  }, [diveMode?.streamId, surfaceFromStream, refetchStreams, refetchWorkItems]);
+  }, [streams, workItems, diveMode?.streamId]);
+
+  // Handle exiting stream detail view (just UI state change)
+  const handleSurface = useCallback(() => {
+    setDiveMode(null);
+  }, []);
 
   // Handle kindling a work item
   const handleKindleWorkItem = useCallback(async (itemId: string) => {
