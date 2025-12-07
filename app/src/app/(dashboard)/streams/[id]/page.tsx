@@ -4,10 +4,121 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useStream, useStreams, useWorkItems, useUpdateWorkItem, useCreateWorkItem, useUpdateStream, useTeam, useMe } from "@/lib/api/hooks";
+import { useStream, useStreams, useWorkItems, useUpdateWorkItem, useCreateWorkItem, useUpdateStream, useTeam, useMe, useTimeEntries, useTimeTracking } from "@/lib/api/hooks";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
 import type { WorkItem as WorkItemType } from "@/lib/api/client";
+
+// Format seconds to HH:MM:SS
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Format duration to human readable
+function formatDurationHuman(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m`;
+  }
+  return `${seconds}s`;
+}
+
+// Time Tracker Component
+function TimeTracker({ workItemId, onUpdate }: { workItemId: string; onUpdate?: () => void }) {
+  const { data: timeData, refetch } = useTimeEntries(workItemId, { pollInterval: 10000 });
+  const { startTimer, stopTimer, isLoading } = useTimeTracking(workItemId);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  const isRunning = !!timeData?.activeEntry;
+  const totalTime = timeData?.totalDuration || 0;
+
+  // Update elapsed time every second when timer is running
+  useEffect(() => {
+    if (!isRunning || !timeData?.activeEntry) {
+      setElapsedTime(0);
+      return;
+    }
+
+    const startedAt = new Date(timeData.activeEntry.startedAt).getTime();
+    
+    const updateElapsed = () => {
+      const now = Date.now();
+      setElapsedTime(Math.floor((now - startedAt) / 1000));
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, timeData?.activeEntry]);
+
+  const handleToggle = async () => {
+    try {
+      if (isRunning) {
+        await stopTimer();
+      } else {
+        await startTimer();
+      }
+      refetch();
+      onUpdate?.();
+    } catch (error) {
+      console.error("Failed to toggle timer:", error);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {/* Total time display */}
+      <span className="text-[10px] text-text-muted font-mono" title="Total time tracked">
+        {formatDurationHuman(isRunning ? totalTime + elapsedTime : totalTime)}
+      </span>
+      
+      {/* Timer button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleToggle();
+        }}
+        disabled={isLoading}
+        className={`p-1 rounded transition-all ${
+          isRunning
+            ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
+            : "bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20"
+        }`}
+        title={isRunning ? `Stop timer (${formatDuration(elapsedTime)})` : "Start timer"}
+      >
+        {isRunning ? (
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="6" width="12" height="12" rx="1" />
+          </svg>
+        ) : (
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      
+      {/* Running indicator */}
+      {isRunning && (
+        <span className="text-[10px] text-red-400 font-mono">
+          {formatDuration(elapsedTime)}
+        </span>
+      )}
+    </div>
+  );
+}
 
 // Dynamic import to avoid SSR issues with Three.js
 const VoidCanvas = dynamic(
@@ -227,9 +338,12 @@ function WorkItemCard({
           <h4 className="text-xs font-medium text-text-bright leading-tight line-clamp-1 flex-1">
             {item.title}
           </h4>
-          <span className="text-[9px] uppercase text-text-muted capitalize flex-shrink-0">
-            {item.energyState === "crystallized" ? "done" : item.energyState}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <TimeTracker workItemId={item.id} />
+            <span className="text-[9px] uppercase text-text-muted capitalize">
+              {item.energyState === "crystallized" ? "done" : item.energyState}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -447,6 +561,9 @@ function WorkItemDetailPanel({
             {item.energyState}
           </span>
           <span className="text-xs text-text-muted capitalize">{item.depth} depth</span>
+          <div className="ml-auto">
+            <TimeTracker workItemId={item.id} />
+          </div>
         </div>
 
         {/* Energy Level */}

@@ -1,8 +1,116 @@
 "use client";
 
-import { useState } from "react";
-import { useStreams, useWorkItems, useCreateStream, useUpdateStream, useDeleteStream, useCreateWorkItem, useUpdateWorkItem, useDeleteWorkItem, useUsers, useMe } from "@/lib/api/hooks";
+import { useState, useEffect, useCallback } from "react";
+import { useStreams, useWorkItems, useCreateStream, useUpdateStream, useDeleteStream, useCreateWorkItem, useUpdateWorkItem, useDeleteWorkItem, useUsers, useMe, useTimeEntries, useTimeTracking } from "@/lib/api/hooks";
 import { api, type WorkItem } from "@/lib/api/client";
+
+// Format seconds to HH:MM:SS
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Format duration to human readable
+function formatDurationHuman(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m`;
+  }
+  return `${seconds}s`;
+}
+
+// Time Tracker Component
+function TimeTracker({ workItemId, onUpdate }: { workItemId: string; onUpdate?: () => void }) {
+  const { data: timeData, refetch } = useTimeEntries(workItemId, { pollInterval: 10000 });
+  const { startTimer, stopTimer, isLoading } = useTimeTracking(workItemId);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  const isRunning = !!timeData?.activeEntry;
+  const totalTime = timeData?.totalDuration || 0;
+
+  // Update elapsed time every second when timer is running
+  useEffect(() => {
+    if (!isRunning || !timeData?.activeEntry) {
+      setElapsedTime(0);
+      return;
+    }
+
+    const startedAt = new Date(timeData.activeEntry.startedAt).getTime();
+    
+    const updateElapsed = () => {
+      const now = Date.now();
+      setElapsedTime(Math.floor((now - startedAt) / 1000));
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, timeData?.activeEntry]);
+
+  const handleToggle = async () => {
+    try {
+      if (isRunning) {
+        await stopTimer();
+      } else {
+        await startTimer();
+      }
+      refetch();
+      onUpdate?.();
+    } catch (error) {
+      console.error("Failed to toggle timer:", error);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {/* Total time display */}
+      <span className="text-xs text-text-muted font-mono" title="Total time tracked">
+        {formatDurationHuman(isRunning ? totalTime + elapsedTime : totalTime)}
+      </span>
+      
+      {/* Timer button */}
+      <button
+        onClick={handleToggle}
+        disabled={isLoading}
+        className={`p-1.5 rounded-lg transition-all ${
+          isRunning
+            ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
+            : "bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20"
+        }`}
+        title={isRunning ? `Stop timer (${formatDuration(elapsedTime)})` : "Start timer"}
+      >
+        {isRunning ? (
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="6" width="12" height="12" rx="1" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      
+      {/* Running indicator */}
+      {isRunning && (
+        <span className="text-xs text-red-400 font-mono">
+          {formatDuration(elapsedTime)}
+        </span>
+      )}
+    </div>
+  );
+}
 
 // Energy state configuration
 const energyStates = {
@@ -454,6 +562,11 @@ export default function StreamsPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Time Tracker - only show for non-crystallized items */}
+                            {item.energyState !== "crystallized" && (
+                              <TimeTracker workItemId={item.id} onUpdate={refetchWorkItems} />
+                            )}
+                            
                             {/* Contributors avatars */}
                             {item.contributors && item.contributors.length > 0 && (
                               <div className="flex -space-x-1.5">

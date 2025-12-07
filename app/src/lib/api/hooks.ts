@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { api, Stream, WorkItem, PingInbox, Ping, PingType, PingStatus } from "./client";
+import { api, Stream, WorkItem, PingInbox, Ping, PingType, PingStatus, TimeEntriesResponse, TimeEntry } from "./client";
 
 interface UseDataOptions {
   pollInterval?: number;
@@ -463,4 +463,73 @@ export function useUpdateOrbitalState() {
   );
 
   return { updateOrbitalState, isLoading, error };
+}
+
+// Time tracking hooks
+export function useTimeEntries(
+  workItemId: string,
+  options?: UseDataOptions
+): UseDataResult<TimeEntriesResponse> {
+  const fetcher = useCallback(() => api.getTimeEntries(workItemId), [workItemId]);
+  return useData(fetcher, { ...options, enabled: !!workItemId });
+}
+
+export function useTimeTracking(workItemId: string) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const startTimer = useCallback(
+    async (description?: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await api.startTimeEntry(workItemId, description);
+        return result.entry;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [workItemId]
+  );
+
+  const stopTimer = useCallback(
+    async (description?: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await api.stopTimeEntry(workItemId, description);
+        return result.entry;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [workItemId]
+  );
+
+  const deleteEntry = useCallback(
+    async (entryId: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        await api.deleteTimeEntry(workItemId, entryId);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [workItemId]
+  );
+
+  return { startTimer, stopTimer, deleteEntry, isLoading, error };
 }

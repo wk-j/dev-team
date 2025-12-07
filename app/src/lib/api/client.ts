@@ -79,6 +79,30 @@ export interface WorkItem {
   crystalBrilliance: number | null;
 }
 
+export interface TimeEntryUser {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  energySignatureColor: string;
+}
+
+export interface TimeEntry {
+  id: string;
+  workItemId: string;
+  userId: string;
+  startedAt: string;
+  stoppedAt: string | null;
+  duration: number | null;
+  description: string | null;
+  user: TimeEntryUser;
+}
+
+export interface TimeEntriesResponse {
+  entries: TimeEntry[];
+  totalDuration: number;
+  activeEntry: TimeEntry | null;
+}
+
 export interface ObservatoryMetrics {
   teamPulse: number;
   activeStreams: number;
@@ -298,6 +322,37 @@ class ApiClient {
 
   async removeContributor(workItemId: string, userId: string): Promise<void> {
     return this.fetch(`/work-items/${workItemId}/contributors?userId=${userId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Time Tracking
+  async getTimeEntries(workItemId: string): Promise<TimeEntriesResponse> {
+    return this.fetch(`/work-items/${workItemId}/time`);
+  }
+
+  async startTimeEntry(
+    workItemId: string,
+    description?: string
+  ): Promise<{ entry: TimeEntry }> {
+    return this.fetch(`/work-items/${workItemId}/time`, {
+      method: "POST",
+      body: JSON.stringify({ description }),
+    });
+  }
+
+  async stopTimeEntry(
+    workItemId: string,
+    description?: string
+  ): Promise<{ entry: TimeEntry }> {
+    return this.fetch(`/work-items/${workItemId}/time`, {
+      method: "PATCH",
+      body: JSON.stringify({ description }),
+    });
+  }
+
+  async deleteTimeEntry(workItemId: string, entryId: string): Promise<void> {
+    return this.fetch(`/work-items/${workItemId}/time?entryId=${entryId}`, {
       method: "DELETE",
     });
   }

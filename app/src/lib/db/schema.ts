@@ -459,6 +459,49 @@ export const resonancePings = pgTable(
 );
 
 // ============================================================================
+// TIME ENTRIES TABLE
+// ============================================================================
+
+export const timeEntries = pgTable(
+  "time_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    workItemId: uuid("work_item_id")
+      .notNull()
+      .references(() => workItems.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Time tracking
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    stoppedAt: timestamp("stopped_at", { withTimezone: true }),
+
+    // Duration in seconds (calculated when stopped, or null if running)
+    duration: integer("duration"),
+
+    // Optional description of what was worked on
+    description: text("description"),
+
+    // Timestamps
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("time_entries_work_item_idx").on(table.workItemId),
+    index("time_entries_user_idx").on(table.userId),
+    index("time_entries_started_at_idx").on(table.startedAt),
+  ]
+);
+
+// ============================================================================
 // ENERGY EVENTS TABLE
 // ============================================================================
 
@@ -561,6 +604,8 @@ export type WorkItem = typeof workItems.$inferSelect;
 export type NewWorkItem = typeof workItems.$inferInsert;
 export type ResonancePing = typeof resonancePings.$inferSelect;
 export type NewResonancePing = typeof resonancePings.$inferInsert;
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type NewTimeEntry = typeof timeEntries.$inferInsert;
 
 export type StarType = (typeof starTypeEnum.enumValues)[number];
 export type OrbitalState = (typeof orbitalStateEnum.enumValues)[number];
