@@ -133,6 +133,24 @@ export default function ObservatoryPage() {
     }
   }, [updateWorkItem, refetchWorkItems, refetchStreams, diveMode, workItems]);
 
+  // Handle changing work item depth
+  const handleWorkItemDepthChange = useCallback(async (itemId: string, newDepth: string) => {
+    try {
+      await updateWorkItem(itemId, { depth: newDepth as "shallow" | "medium" | "deep" | "abyssal" });
+      // Refresh data
+      refetchWorkItems();
+      // Update dive mode work items if active
+      if (diveMode) {
+        const updatedItems = workItems?.filter(w => w.streamId === diveMode.streamId).map(w => 
+          w.id === itemId ? { ...w, depth: newDepth } : w
+        ) ?? [];
+        setDiveMode(prev => prev ? { ...prev, workItems: updatedItems as typeof prev.workItems } : null);
+      }
+    } catch (error) {
+      console.error("Failed to update work item depth:", error);
+    }
+  }, [updateWorkItem, refetchWorkItems, diveMode, workItems]);
+
   // Calculate metrics from real data
   const metrics = useMemo(() => {
     const activeStreams = streams?.filter(s => s.state !== "evaporated" && s.state !== "stagnant").length ?? 0;
@@ -215,6 +233,7 @@ export default function ObservatoryPage() {
           onSurfaceFromStream={handleSurface}
           onWorkItemKindle={handleKindleWorkItem}
           onWorkItemStateChange={handleWorkItemStateChange}
+          onWorkItemDepthChange={handleWorkItemDepthChange}
           teamPulseSettings={(currentUserData as any)?.preferences?.teamPulse}
         />
       </div>

@@ -37,6 +37,7 @@ interface DiveModeProps {
   onItemClick?: (itemId: string) => void;
   onItemKindle?: (itemId: string) => void;
   onStateChange?: (itemId: string, newState: EnergyState) => void;
+  onDepthChange?: (itemId: string, newDepth: WorkItemDepth) => void;
   onSurface?: () => void;
 }
 
@@ -53,6 +54,14 @@ const stateTransitions: Record<EnergyState, { to: EnergyState; label: string; co
     { to: "blazing", label: "Continue", color: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/50" },
   ],
   crystallized: [],
+};
+
+// Depth configuration
+const depthConfig: Record<WorkItemDepth, { label: string; color: string; bg: string }> = {
+  shallow: { label: "Shallow", color: "text-sky-400", bg: "bg-sky-500/20" },
+  medium: { label: "Medium", color: "text-blue-400", bg: "bg-blue-500/20" },
+  deep: { label: "Deep", color: "text-indigo-400", bg: "bg-indigo-500/20" },
+  abyssal: { label: "Abyssal", color: "text-purple-400", bg: "bg-purple-500/20" },
 };
 
 // Get point on the stream path curve (must match DiveStreamPath)
@@ -328,6 +337,7 @@ export function DiveMode({
   onItemClick,
   onItemKindle,
   onStateChange,
+  onDepthChange,
   onSurface,
 }: DiveModeProps) {
   const { camera } = useThree();
@@ -584,30 +594,28 @@ export function DiveMode({
                   </p>
                 )}
 
-                {/* Depth indicator */}
-                <div className="flex items-center gap-2 mb-3 text-xs">
-                  <span className="text-text-muted">Depth:</span>
-                  <div className="flex gap-0.5">
-                    {(["shallow", "medium", "deep", "abyssal"] as const).map((d, i) => (
-                      <div
-                        key={d}
-                        className={`w-2 h-2 rounded-full ${
-                          ["shallow", "medium", "deep", "abyssal"].indexOf(selectedItem.depth) >= i
-                            ? selectedItem.depth === "shallow" ? "bg-sky-400"
-                              : selectedItem.depth === "medium" ? "bg-blue-400"
-                              : selectedItem.depth === "deep" ? "bg-indigo-400"
-                              : "bg-purple-400"
-                            : "bg-void-atmosphere"
-                        }`}
-                      />
-                    ))}
+                {/* Depth selector */}
+                <div className="mb-3">
+                  <div className="text-xs text-text-muted mb-1.5">Depth:</div>
+                  <div className="flex gap-1">
+                    {(["shallow", "medium", "deep", "abyssal"] as const).map((d) => {
+                      const config = depthConfig[d];
+                      const isSelected = selectedItem.depth === d;
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => onDepthChange?.(selectedItem.id, d)}
+                          className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors border ${
+                            isSelected
+                              ? `${config.bg} ${config.color} border-current`
+                              : "border-void-atmosphere text-text-dim hover:border-void-surface hover:text-text-muted"
+                          }`}
+                        >
+                          {config.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <span className={`capitalize ${
-                    selectedItem.depth === "shallow" ? "text-sky-400"
-                    : selectedItem.depth === "medium" ? "text-blue-400"
-                    : selectedItem.depth === "deep" ? "text-indigo-400"
-                    : "text-purple-400"
-                  }`}>{selectedItem.depth}</span>
                 </div>
 
                 {/* State transition buttons */}
