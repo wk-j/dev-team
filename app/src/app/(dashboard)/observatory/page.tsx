@@ -193,7 +193,7 @@ export default function ObservatoryPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] relative overflow-hidden">
+    <div className="h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] relative overflow-hidden">
       {/* Full-screen 3D Canvas */}
       <div className="absolute inset-0 canvas-container">
         {diveLoading && (
@@ -227,46 +227,98 @@ export default function ObservatoryPage() {
       {/* Overlay UI - Hidden in dive mode */}
       {!diveMode && (
         <>
-          {/* Top bar with title and controls */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10 pointer-events-none">
-            <div className="pointer-events-auto">
-              <h1 className="text-xl font-semibold text-text-bright drop-shadow-lg">Observatory</h1>
+          {/* Top Left - Title & Stats Panel */}
+          <div className="absolute top-4 left-4 z-10 pointer-events-auto">
+            <div className="mb-3">
+              <h1 className="text-xl font-semibold text-text-stellar tracking-tight">Observatory</h1>
               <p className="text-sm text-text-muted">
                 {isLoading ? "Loading..." : `${metrics.teamOnline} active · ${metrics.activeStreams} streams`}
               </p>
             </div>
             
-            <div className="flex gap-2 pointer-events-auto">
+            {/* Stats panel */}
+            {showStats && (
+              <div className="glass-panel-float p-4 w-52">
+                {/* Energy bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-text-dim">Team Energy</span>
+                    <span className="text-text-bright font-medium">{Math.round(metrics.energyLevel * 100)}%</span>
+                  </div>
+                  <div className="h-2 bg-void-atmosphere/80 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-primary/70 transition-all duration-500"
+                      style={{ width: `${metrics.energyLevel * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <div>
+                    <div className="text-xl font-bold text-accent-primary">{metrics.activeStreams}</div>
+                    <div className="text-xs text-text-muted">Streams</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-accent-primary">{metrics.teamOnline}</div>
+                    <div className="text-xs text-text-muted">Active</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-energy-crystallized">{metrics.totalCrystals}</div>
+                    <div className="text-xs text-text-muted">Crystals</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-energy-kindling">{metrics.activeItems}</div>
+                    <div className="text-xs text-text-muted">In flow</div>
+                  </div>
+                </div>
+
+                {/* Rushing indicator */}
+                {metrics.rushingStreams > 0 && (
+                  <div className="mt-3 pt-3 border-t border-void-atmosphere/60">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="w-2 h-2 rounded-full bg-energy-blazing animate-pulse" />
+                      <span className="text-text-muted">{metrics.rushingStreams} rushing</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+            
+          {/* Top Right - Control Buttons */}
+          <div className="absolute top-4 right-4 z-10 pointer-events-auto">
+            <div className="flex items-center gap-2">
               {hasError && (
-                <span className="px-2 py-1 text-xs text-accent-warning bg-void-deep/80 backdrop-blur-sm rounded-lg border border-accent-warning/30">
+                <span className="px-3 py-1.5 text-xs text-accent-warning glass-panel-float border-accent-warning/30 rounded-full">
                   Demo mode
                 </span>
               )}
               <button
-                className="px-3 py-1.5 text-xs rounded-lg backdrop-blur-sm transition-colors bg-void-deep/80 text-accent-primary border border-accent-primary/50 hover:bg-accent-primary/10 flex items-center gap-1.5"
+                className="glass-button-pill px-4 py-2 text-xs text-accent-primary border-accent-primary/30 hover:border-accent-primary/50 flex items-center gap-2"
                 onClick={() => setShowGuide(true)}
                 title="Show guide"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
                 </svg>
                 Help
               </button>
               <button
-                className={`px-2 py-1 text-xs rounded-lg backdrop-blur-sm transition-colors ${
+                className={`glass-button-pill px-4 py-2 text-xs transition-all ${
                   showStats
-                    ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/50"
-                    : "bg-void-deep/80 text-text-muted border border-void-atmosphere hover:text-text-bright"
+                    ? "glass-button-active text-accent-primary"
+                    : "text-text-dim hover:text-text-bright"
                 }`}
                 onClick={() => setShowStats(!showStats)}
               >
                 Stats
               </button>
               <button
-                className={`px-2 py-1 text-xs rounded-lg backdrop-blur-sm transition-colors ${
+                className={`glass-button-pill px-4 py-2 text-xs transition-all ${
                   showPerformance
-                    ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/50"
-                    : "bg-void-deep/80 text-text-muted border border-void-atmosphere hover:text-text-bright"
+                    ? "glass-button-active text-accent-primary"
+                    : "text-text-dim hover:text-text-bright"
                 }`}
                 onClick={() => setShowPerformance(!showPerformance)}
               >
@@ -275,127 +327,68 @@ export default function ObservatoryPage() {
             </div>
           </div>
 
-          {/* Stats panel - floating overlay */}
-          {showStats && (
-            <div className="absolute top-16 left-4 z-10 pointer-events-auto">
-              <div className="bg-void-deep/80 backdrop-blur-md border border-void-atmosphere rounded-xl p-4 w-56">
-                {/* Energy bar */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-text-muted">Team Energy</span>
-                    <span className="text-text-bright">{Math.round(metrics.energyLevel * 100)}%</span>
-                  </div>
-                  <div className="h-1.5 bg-void-atmosphere rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-accent-primary transition-all duration-500"
-                      style={{ width: `${metrics.energyLevel * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Stats grid */}
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-lg font-semibold text-energy-blazing">{metrics.activeStreams}</div>
-                    <div className="text-xs text-text-muted">Streams</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-accent-primary">{metrics.teamOnline}</div>
-                    <div className="text-xs text-text-muted">Active</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-energy-crystallized">{metrics.totalCrystals}</div>
-                    <div className="text-xs text-text-muted">Crystals</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-energy-kindling">{metrics.activeItems}</div>
-                    <div className="text-xs text-text-muted">In flow</div>
-                  </div>
-                </div>
-
-                {/* Rushing indicator */}
-                {metrics.rushingStreams > 0 && (
-                  <div className="mt-3 pt-3 border-t border-void-atmosphere">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="w-2 h-2 rounded-full bg-energy-blazing animate-pulse" />
-                      <span className="text-text-muted">{metrics.rushingStreams} rushing</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Bottom controls */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-auto">
-            <div className="bg-void-deep/80 backdrop-blur-md border border-void-atmosphere rounded-full px-4 py-2 flex items-center gap-4 text-xs text-text-muted">
-              <span className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-void-atmosphere rounded text-text-dim">Drag</kbd>
-                rotate
+            <div className="glass-panel-float rounded-full px-5 py-2.5 flex items-center gap-5 text-xs text-text-muted">
+              <span className="flex items-center gap-2">
+                <kbd className="px-2 py-1 bg-void-atmosphere/60 rounded-md text-text-dim font-mono text-[10px]">Drag</kbd>
+                <span>rotate</span>
               </span>
-              <span className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-void-atmosphere rounded text-text-dim">Scroll</kbd>
-                zoom
+              <span className="flex items-center gap-2">
+                <kbd className="px-2 py-1 bg-void-atmosphere/60 rounded-md text-text-dim font-mono text-[10px]">Scroll</kbd>
+                <span>zoom</span>
               </span>
-              <span className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-void-atmosphere rounded text-text-dim">Click</kbd>
-                dive
+              <span className="flex items-center gap-2">
+                <kbd className="px-2 py-1 bg-void-atmosphere/60 rounded-md text-text-dim font-mono text-[10px]">Click</kbd>
+                <span>dive</span>
               </span>
             </div>
           </div>
 
-          {/* Legend - bottom right - explains all canvas elements */}
-          <div className="absolute bottom-4 right-4 z-10 pointer-events-auto">
-            <div className="bg-void-deep/90 backdrop-blur-md border border-void-atmosphere rounded-xl p-3 min-w-[200px]">
-              <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2">Legend</div>
+          {/* Legend - bottom right */}
+          <div className="absolute bottom-4 right-4 z-10 pointer-events-auto hidden md:block">
+            <div className="glass-panel-float p-3 min-w-[200px]">
+              <div className="text-[10px] text-text-dim uppercase tracking-wider font-medium mb-2">Legend</div>
               
               {/* Element types */}
               <div className="space-y-2 text-xs">
-                {/* Center pulse */}
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#00d4ff]/50 flex-shrink-0" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-accent-primary to-accent-primary/50 flex-shrink-0 shadow-[0_0_8px_rgba(0,212,255,0.4)]" />
                   <span className="text-text-muted">Team Pulse (center)</span>
                 </div>
-                
-                {/* Streams */}
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-0.5 bg-[#00d4ff] flex-shrink-0 rounded" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-4 h-0.5 bg-accent-primary flex-shrink-0 rounded shadow-[0_0_4px_rgba(0,212,255,0.4)]" />
                   <span className="text-text-muted">Work Stream</span>
                 </div>
-                
-                {/* Work items */}
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#fbbf24] flex-shrink-0" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-energy-blazing flex-shrink-0 shadow-[0_0_6px_rgba(255,215,0,0.4)]" />
                   <span className="text-text-muted">Work Item (active)</span>
                 </div>
-                
-                {/* Team members */}
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#ff6b9d] ring-1 ring-[#ff6b9d]/50 flex-shrink-0" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-[#ff6b9d] ring-2 ring-[#ff6b9d]/30 flex-shrink-0" />
                   <span className="text-text-muted">Team Member (outer ring)</span>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-void-atmosphere my-2" />
+              <div className="h-px bg-void-atmosphere/60 my-2.5" />
               
               {/* Work item states */}
-              <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1.5">Work States</div>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#4b5563]" />
+              <div className="text-[10px] text-text-dim uppercase tracking-wider font-medium mb-2">Work States</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px]">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-energy-dormant" />
                   <span className="text-text-dim">Dormant</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#f97316]" />
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-energy-kindling" />
                   <span className="text-text-dim">Kindling</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#fbbf24]" />
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-energy-blazing" />
                   <span className="text-text-dim">Blazing</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#06b6d4]" />
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-energy-crystallized" />
                   <span className="text-text-dim">Done</span>
                 </span>
               </div>

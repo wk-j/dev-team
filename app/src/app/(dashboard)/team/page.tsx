@@ -290,7 +290,7 @@ export default function TeamPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-pulse text-4xl mb-4">👥</div>
           <p className="text-text-dim">Loading team...</p>
@@ -301,7 +301,7 @@ export default function TeamPage() {
 
   if (error) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <p className="text-accent-warning">{error}</p>
@@ -311,7 +311,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] p-6">
+    <div className="min-h-[calc(100vh-6rem)] p-6">
       <div className="max-w-4xl mx-auto">
         {/* Incoming Invites Banner */}
         {incomingInvites.length > 0 && (
@@ -351,8 +351,8 @@ export default function TeamPage() {
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="text-stellar text-text-stellar mb-2">{team?.name}</h1>
-            <p className="text-moon text-text-dim">
+            <h1 className="text-2xl font-bold text-text-stellar mb-2">{team?.name}</h1>
+            <p className="text-sm text-text-muted">
               {team?.description || "Your team workspace"}
             </p>
           </div>
@@ -361,15 +361,18 @@ export default function TeamPage() {
               <>
                 <button
                   onClick={() => setShowEditModal(true)}
-                  className="px-4 py-2 border border-void-atmosphere rounded-lg text-text-muted hover:text-text-bright hover:border-accent-primary/50 transition-colors"
+                  className="glass-button-pill px-4 py-2.5 text-sm text-text-muted hover:text-text-bright"
                 >
                   Edit Team
                 </button>
                 <button
                   onClick={() => setShowInviteModal(true)}
-                  className="px-4 py-2 bg-accent-primary/20 text-accent-primary border border-accent-primary/50 rounded-lg hover:bg-accent-primary/30 transition-colors"
+                  className="glass-button-pill px-5 py-2.5 text-sm text-accent-primary border-accent-primary/40 hover:border-accent-primary/60 flex items-center gap-2 hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]"
                 >
-                  + Invite
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Invite
                 </button>
               </>
             )}
@@ -377,8 +380,8 @@ export default function TeamPage() {
         </div>
 
         {/* Members Section */}
-        <div className="glass-panel p-6 rounded-xl mb-6">
-          <h2 className="text-lg font-semibold text-text-bright mb-4">
+        <div className="glass-panel-float p-6 mb-6">
+          <h2 className="text-lg font-semibold text-text-stellar mb-4">
             Members ({team?.members.length})
           </h2>
           
@@ -450,8 +453,8 @@ export default function TeamPage() {
 
         {/* Pending Invites */}
         {canManage && (
-          <div className="glass-panel p-6 rounded-xl">
-            <h2 className="text-lg font-semibold text-text-bright mb-4">
+          <div className="glass-panel-float p-6">
+            <h2 className="text-lg font-semibold text-text-stellar mb-4">
               Pending Invites ({invites.length})
             </h2>
             

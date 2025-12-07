@@ -79,8 +79,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="glass-panel p-6 rounded-xl">
-      <h2 className="text-lg font-semibold text-text-bright mb-1">{title}</h2>
+    <div className="glass-panel-float p-6">
+      <h2 className="text-lg font-semibold text-text-stellar mb-1">{title}</h2>
       {description && <p className="text-sm text-text-muted mb-4">{description}</p>}
       <div className="space-y-4">{children}</div>
     </div>
@@ -211,7 +211,7 @@ export default function SanctumPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-pulse text-4xl mb-4">⚙️</div>
           <p className="text-text-dim">Loading sanctum...</p>
@@ -222,7 +222,7 @@ export default function SanctumPage() {
 
   if (error) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <p className="text-accent-warning">{error}</p>
@@ -232,22 +232,22 @@ export default function SanctumPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] p-6">
+    <div className="min-h-[calc(100vh-6rem)] p-6">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-stellar text-text-stellar mb-2">Sanctum</h1>
-          <p className="text-moon text-text-dim">
+          <h1 className="text-2xl font-bold text-text-stellar mb-2">Sanctum</h1>
+          <p className="text-sm text-text-muted">
             Your personal space for customization and preferences
           </p>
         </div>
 
         {/* Save status indicator */}
         {saveStatus !== "idle" && (
-          <div className={`fixed top-20 right-6 px-4 py-2 rounded-lg text-sm z-50 ${
-            saveStatus === "saving" ? "bg-void-atmosphere text-text-muted" :
-            saveStatus === "saved" ? "bg-accent-success/20 text-accent-success" :
-            "bg-accent-warning/20 text-accent-warning"
+          <div className={`fixed top-24 right-6 px-4 py-2 rounded-xl text-sm z-50 glass-panel-float ${
+            saveStatus === "saving" ? "text-text-muted" :
+            saveStatus === "saved" ? "text-accent-success border-accent-success/30" :
+            "text-accent-warning border-accent-warning/30"
           }`}>
             {saveStatus === "saving" && "Saving..."}
             {saveStatus === "saved" && "Saved ✓"}

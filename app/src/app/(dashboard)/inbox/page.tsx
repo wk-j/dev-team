@@ -44,7 +44,7 @@ export default function InboxPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-pulse text-4xl mb-4">📨</div>
           <p className="text-text-dim">Loading inbox...</p>
@@ -54,20 +54,20 @@ export default function InboxPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] p-6">
+    <div className="min-h-[calc(100vh-6rem)] p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="text-stellar text-text-stellar mb-2">
+            <h1 className="text-2xl font-bold text-text-stellar mb-2">
               Ping Inbox
             </h1>
-            <p className="text-moon text-text-dim">
+            <p className="text-sm text-text-muted">
               Messages from your teammates
             </p>
           </div>
           {unreadCount > 0 && (
-            <span className="px-3 py-1 bg-accent-primary/20 text-accent-primary border border-accent-primary/50 rounded-full text-sm">
+            <span className="glass-button-pill px-4 py-1.5 text-accent-primary border-accent-primary/40 text-sm">
               {unreadCount} unread
             </span>
           )}
@@ -77,20 +77,20 @@ export default function InboxPage() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            className={`glass-button-pill px-4 py-2 text-sm transition-all ${
               filter === "all"
-                ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/50"
-                : "bg-void-surface text-text-muted border border-void-atmosphere hover:text-text-bright"
+                ? "glass-button-active text-accent-primary"
+                : "text-text-muted hover:text-text-bright"
             }`}
           >
             All ({pings.length})
           </button>
           <button
             onClick={() => setFilter("unread")}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            className={`glass-button-pill px-4 py-2 text-sm transition-all ${
               filter === "unread"
-                ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/50"
-                : "bg-void-surface text-text-muted border border-void-atmosphere hover:text-text-bright"
+                ? "glass-button-active text-accent-primary"
+                : "text-text-muted hover:text-text-bright"
             }`}
           >
             Unread ({unreadCount})
@@ -103,10 +103,10 @@ export default function InboxPage() {
             {filteredPings.map((ping) => (
               <div
                 key={ping.id}
-                className={`glass-panel p-5 rounded-xl transition-colors ${
+                className={`glass-panel-float p-5 transition-all ${
                   ping.status === "read" 
                     ? "opacity-60" 
-                    : "border-accent-primary/30"
+                    : "border-accent-primary/30 hover:shadow-[0_0_25px_rgba(0,212,255,0.1)]"
                 }`}
               >
                 <div className="flex items-start gap-4">

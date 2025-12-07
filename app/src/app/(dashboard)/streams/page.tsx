@@ -177,28 +177,30 @@ export default function StreamsPage() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="h-[calc(100vh-6rem)] flex items-center justify-center">
         <div className="text-text-dim">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex justify-center">
-      <div className="flex w-full max-w-7xl">
+    <div className="h-[calc(100vh-6rem)] flex justify-center px-4 pb-4">
+      <div className="flex w-full max-w-7xl gap-4">
       {/* Sidebar - Stream List */}
-      <div className="w-72 flex-shrink-0 border-r border-void-atmosphere bg-void-deep/50 flex flex-col">
-        <div className="p-4 border-b border-void-atmosphere">
+      <div className="w-72 flex-shrink-0 glass-panel-solid flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-void-atmosphere/60">
           <div className="flex items-center justify-between mb-1">
-            <h1 className="text-lg font-semibold text-text-bright">Streams</h1>
+            <h1 className="text-lg font-semibold text-text-stellar">Streams</h1>
             <button
               onClick={() => setShowCreateStream(true)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-accent-primary/20 text-accent-primary hover:bg-accent-primary/30 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-accent-primary/20 text-accent-primary hover:bg-accent-primary/30 border border-accent-primary/30 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.2)]"
             >
-              +
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
             </button>
           </div>
-          <p className="text-xs text-text-dim">Organize your work</p>
+          <p className="text-xs text-text-muted">Organize your work</p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
@@ -212,38 +214,38 @@ export default function StreamsPage() {
               <button
                 key={stream.id}
                 onClick={() => setSelectedStreamId(stream.id)}
-                className={`w-full text-left p-3 rounded-lg mb-1 transition-colors ${
+                className={`w-full text-left p-3 rounded-xl mb-1.5 transition-all ${
                   isSelected 
-                    ? "bg-accent-primary/20 border border-accent-primary/50" 
-                    : "hover:bg-void-atmosphere border border-transparent"
+                    ? "bg-void-atmosphere/80 border border-accent-primary/40 shadow-[0_0_15px_rgba(0,212,255,0.1)]" 
+                    : "hover:bg-void-atmosphere/50 border border-transparent"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     {/* Stream state indicator dot */}
                     <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        stream.state === "flooding" ? "bg-red-500" :
-                        stream.state === "rushing" ? "bg-yellow-500" :
-                        stream.state === "flowing" ? "bg-cyan-500" :
+                      className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        stream.state === "flooding" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" :
+                        stream.state === "rushing" ? "bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]" :
+                        stream.state === "flowing" ? "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)]" :
                         stream.state === "stagnant" ? "bg-gray-500" :
                         "bg-slate-500"
                       }`}
                       title={streamStateConfig[stream.state as StreamStateType]?.label || stream.state}
                     />
-                    <span className={`font-medium truncate ${isSelected ? "text-accent-primary" : "text-text-bright"}`}>
+                    <span className={`font-medium truncate ${isSelected ? "text-text-stellar" : "text-text-bright"}`}>
                       {stream.name}
                     </span>
                   </div>
                   {active > 0 && (
-                    <span className="text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                    <span className="text-xs bg-energy-kindling/20 text-energy-kindling px-2 py-0.5 rounded-full flex-shrink-0 font-medium">
                       {active}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-text-dim">
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-text-muted">
                   <span>{items.length} items</span>
-                  <span>{stream.crystalCount} done</span>
+                  <span className="text-energy-crystallized">{stream.crystalCount} done</span>
                 </div>
               </button>
             );
@@ -296,15 +298,15 @@ export default function StreamsPage() {
         </div>
 
         {/* Show Closed Streams Toggle */}
-        <div className="p-3 border-t border-void-atmosphere">
+        <div className="p-3 border-t border-void-atmosphere/60">
           <button
             onClick={() => setShowClosedStreams(!showClosedStreams)}
-            className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-void-atmosphere transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-xl hover:bg-void-atmosphere/50 transition-colors"
           >
             <span className="text-text-muted">
               {showClosedStreams ? "Hide closed" : "Show closed"}
             </span>
-            <span className="text-text-dim">
+            <span className="text-text-dim flex items-center">
               {closedStreams.length > 0 && !showClosedStreams && `(${closedStreams.length})`}
               {showClosedStreams && (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,15 +324,15 @@ export default function StreamsPage() {
       </div>
 
       {/* Main Content - Work Items */}
-      <div className="flex-1 flex flex-col bg-void-nebula/30">
+      <div className="flex-1 flex flex-col glass-panel-float overflow-hidden">
         {selectedStream ? (
           <>
             {/* Stream Header */}
-            <div className="p-4 border-b border-void-atmosphere bg-void-deep/30">
+            <div className="p-5 border-b border-void-atmosphere/60">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-semibold text-text-bright">{selectedStream.name}</h2>
+                    <h2 className="text-xl font-semibold text-text-stellar">{selectedStream.name}</h2>
                     {/* Stream State Selector */}
                     <div className="relative group">
                       <button
@@ -375,9 +377,12 @@ export default function StreamsPage() {
                     <>
                       <button
                         onClick={() => setShowCreateItem(true)}
-                        className="px-3 py-1.5 text-sm bg-accent-primary/20 text-accent-primary border border-accent-primary/50 rounded-lg hover:bg-accent-primary/30 transition-colors"
+                        className="glass-button-pill px-4 py-2 text-sm text-accent-primary border-accent-primary/40 hover:border-accent-primary/60 flex items-center gap-2 hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]"
                       >
-                        + New Item
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Item
                       </button>
                       <button
                         onClick={async () => {
@@ -386,7 +391,7 @@ export default function StreamsPage() {
                           setSelectedStreamId(null);
                           refetch();
                         }}
-                        className="px-3 py-1.5 text-sm text-text-muted hover:text-text-bright hover:bg-void-atmosphere rounded-lg transition-colors"
+                        className="glass-button-pill px-4 py-2 text-sm text-text-muted hover:text-text-bright"
                       >
                         Close Stream
                       </button>
@@ -398,7 +403,7 @@ export default function StreamsPage() {
                         await updateStream(selectedStream.id, { state: "stagnant" });
                         refetch();
                       }}
-                      className="px-3 py-1.5 text-sm bg-green-500/20 text-green-400 border border-green-500/50 rounded-lg hover:bg-green-500/30 transition-colors"
+                      className="glass-button-pill px-4 py-2 text-sm text-accent-success border-accent-success/40 hover:border-accent-success/60"
                     >
                       Reopen Stream
                     </button>
@@ -408,9 +413,9 @@ export default function StreamsPage() {
             </div>
 
             {/* Work Items List */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-5">
               {selectedItems.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {selectedItems.map((item) => {
                     const state = energyStates[item.energyState as keyof typeof energyStates];
                     const availableTransitions = transitions[item.energyState] ?? [];
@@ -420,7 +425,7 @@ export default function StreamsPage() {
                     return (
                       <div
                         key={item.id}
-                        className="bg-void-deep/50 border border-void-atmosphere rounded-lg p-4 hover:border-void-surface transition-colors group"
+                        className="glass-panel p-4 hover:border-void-surface/80 transition-all group hover:shadow-[0_0_20px_rgba(0,212,255,0.05)]"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
@@ -558,29 +563,29 @@ export default function StreamsPage() {
 
       {/* Create Stream Modal */}
       {showCreateStream && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowCreateStream(false)}>
-          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-text-bright mb-4">New Stream</h2>
+        <div className="fixed inset-0 bg-void-deep/60 backdrop-blur-md flex items-center justify-center z-50" onClick={() => setShowCreateStream(false)}>
+          <div className="glass-panel-float p-6 w-full max-w-sm shadow-[0_0_60px_rgba(0,212,255,0.1)]" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-text-stellar mb-4">New Stream</h2>
             <input
               type="text"
               value={newStreamName}
               onChange={(e) => setNewStreamName(e.target.value)}
               placeholder="Stream name..."
-              className="w-full px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary"
+              className="glass-input w-full px-4 py-3 text-text-bright placeholder-text-muted"
               autoFocus
               onKeyDown={(e) => e.key === "Enter" && handleCreateStream()}
             />
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-3 mt-5">
               <button
                 onClick={() => setShowCreateStream(false)}
-                className="flex-1 px-3 py-2 text-sm border border-void-atmosphere rounded-lg text-text-dim hover:text-text-bright transition-colors"
+                className="flex-1 glass-button px-4 py-2.5 text-sm text-text-dim hover:text-text-bright"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateStream}
                 disabled={!newStreamName.trim() || isCreating}
-                className="flex-1 px-3 py-2 text-sm bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm bg-accent-primary text-void-deep rounded-xl font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
               >
                 Create
               </button>
@@ -591,24 +596,24 @@ export default function StreamsPage() {
 
       {/* Create Item Modal */}
       {showCreateItem && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowCreateItem(false)}>
-          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-text-bright mb-4">New Work Item</h2>
+        <div className="fixed inset-0 bg-void-deep/60 backdrop-blur-md flex items-center justify-center z-50" onClick={() => setShowCreateItem(false)}>
+          <div className="glass-panel-float p-6 w-full max-w-md shadow-[0_0_60px_rgba(0,212,255,0.1)]" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-text-stellar mb-4">New Work Item</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-text-dim mb-1">Title</label>
+                <label className="block text-sm text-text-muted mb-2">Title</label>
                 <input
                   type="text"
                   value={newItemTitle}
                   onChange={(e) => setNewItemTitle(e.target.value)}
                   placeholder="What needs to be done?"
-                  className="w-full px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary"
+                  className="glass-input w-full px-4 py-3 text-text-bright placeholder-text-muted"
                   autoFocus
                   onKeyDown={(e) => e.key === "Enter" && handleCreateItem()}
                 />
               </div>
               <div>
-                <label className="block text-sm text-text-dim mb-1">Depth</label>
+                <label className="block text-sm text-text-muted mb-2">Depth</label>
                 <div className="grid grid-cols-4 gap-2">
                   {(Object.keys(depthConfig) as DepthType[]).map((d) => {
                     const config = depthConfig[d];
@@ -618,33 +623,33 @@ export default function StreamsPage() {
                         key={d}
                         type="button"
                         onClick={() => setNewItemDepth(d)}
-                        className={`p-2 rounded-lg border text-center transition-colors ${
+                        className={`p-3 rounded-xl border text-center transition-all ${
                           isSelected
-                            ? `${config.bg} ${config.color} border-current`
-                            : "border-void-atmosphere text-text-dim hover:border-void-surface hover:text-text-muted"
+                            ? `${config.bg} ${config.color} border-current shadow-[0_0_15px_rgba(0,212,255,0.1)]`
+                            : "border-void-atmosphere/60 text-text-dim hover:border-void-surface hover:text-text-muted"
                         }`}
                         title={config.description}
                       >
                         <div className="text-lg">{config.icon}</div>
-                        <div className="text-xs mt-0.5">{config.label}</div>
+                        <div className="text-xs mt-1">{config.label}</div>
                       </button>
                     );
                   })}
                 </div>
-                <p className="text-xs text-text-dim mt-1">{depthConfig[newItemDepth].description}</p>
+                <p className="text-xs text-text-muted mt-2">{depthConfig[newItemDepth].description}</p>
               </div>
             </div>
-            <div className="flex gap-2 mt-6">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => { setShowCreateItem(false); setNewItemDepth("medium"); }}
-                className="flex-1 px-3 py-2 text-sm border border-void-atmosphere rounded-lg text-text-dim hover:text-text-bright transition-colors"
+                className="flex-1 glass-button px-4 py-2.5 text-sm text-text-dim hover:text-text-bright"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateItem}
                 disabled={!newItemTitle.trim()}
-                className="flex-1 px-3 py-2 text-sm bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm bg-accent-primary text-void-deep rounded-xl font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
               >
                 Create
               </button>
@@ -655,29 +660,29 @@ export default function StreamsPage() {
 
       {/* Edit Item Modal */}
       {editingItem && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setEditingItem(null)}>
-          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-text-bright mb-4">Edit Work Item</h2>
+        <div className="fixed inset-0 bg-void-deep/60 backdrop-blur-md flex items-center justify-center z-50" onClick={() => setEditingItem(null)}>
+          <div className="glass-panel-float p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[0_0_60px_rgba(0,212,255,0.1)]" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-text-stellar mb-4">Edit Work Item</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-text-dim mb-1">Title</label>
+                <label className="block text-sm text-text-muted mb-2">Title</label>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   placeholder="What needs to be done?"
-                  className="w-full px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary"
+                  className="glass-input w-full px-4 py-3 text-text-bright placeholder-text-muted"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm text-text-dim mb-1">Description (optional)</label>
+                <label className="block text-sm text-text-muted mb-2">Description (optional)</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   placeholder="Add more details..."
                   rows={3}
-                  className="w-full px-3 py-2 bg-void-atmosphere border border-void-surface rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary resize-none"
+                  className="glass-input w-full px-4 py-3 text-text-bright placeholder-text-muted resize-none"
                 />
               </div>
               <div>
@@ -752,17 +757,17 @@ export default function StreamsPage() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 mt-6">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => { setEditingItem(null); setNewTag(""); }}
-                className="flex-1 px-3 py-2 text-sm border border-void-atmosphere rounded-lg text-text-dim hover:text-text-bright transition-colors"
+                className="flex-1 glass-button px-4 py-2.5 text-sm text-text-dim hover:text-text-bright"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveEdit}
                 disabled={!editTitle.trim()}
-                className="flex-1 px-3 py-2 text-sm bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm bg-accent-primary text-void-deep rounded-xl font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
               >
                 Save
               </button>
@@ -773,9 +778,9 @@ export default function StreamsPage() {
 
       {/* Assign/Handoff Item Modal */}
       {assigningItem && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setAssigningItem(null)}>
-          <div className="bg-void-deep border border-void-atmosphere rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-text-bright mb-2">
+        <div className="fixed inset-0 bg-void-deep/60 backdrop-blur-md flex items-center justify-center z-50" onClick={() => setAssigningItem(null)}>
+          <div className="glass-panel-float p-6 w-full max-w-sm shadow-[0_0_60px_rgba(0,212,255,0.1)]" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-text-stellar mb-2">
               Add Contributor
             </h2>
             <p className="text-sm text-text-dim mb-4 truncate">"{assigningItem.title}"</p>
@@ -850,7 +855,7 @@ export default function StreamsPage() {
             
             <button
               onClick={() => setAssigningItem(null)}
-              className="w-full mt-4 px-3 py-2 text-sm border border-void-atmosphere rounded-lg text-text-dim hover:text-text-bright transition-colors"
+              className="w-full mt-4 glass-button px-4 py-2.5 text-sm text-text-dim hover:text-text-bright"
             >
               Done
             </button>
