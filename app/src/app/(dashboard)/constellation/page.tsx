@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useUsers, useSendPing } from "@/lib/api/hooks";
+import { useState, useEffect, useCallback } from "react";
+import { useUsers, useSendPing, useTeam } from "@/lib/api/hooks";
 import { MemberProfileCard } from "@/components/canvas/MemberProfileCard";
 import { EnergyInfusionModal } from "@/components/canvas/EnergyInfusionModal";
 import type { StarType, OrbitalState } from "@/components/canvas/CelestialBody";
@@ -36,6 +36,21 @@ const starTypeInfo: Record<string, { label: string; description: string }> = {
   neutron: { label: "Neutron", description: "Specialist" },
 };
 
+const roleColors: Record<string, { bg: string; text: string }> = {
+  owner: { bg: "bg-yellow-500/20", text: "text-yellow-400" },
+  admin: { bg: "bg-purple-500/20", text: "text-purple-400" },
+  member: { bg: "bg-blue-500/20", text: "text-blue-400" },
+};
+
+interface TeamInvite {
+  id: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  expiresAt: string;
+  invitedBy: { id: string; name: string };
+}
+
 export default function ConstellationPage() {
   const [filter, setFilter] = useState<string>("all");
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -43,10 +58,117 @@ export default function ConstellationPage() {
   const [showPingModal, setShowPingModal] = useState(false);
   const [pingMessage, setPingMessage] = useState("");
   const [pingType, setPingType] = useState<"gentle" | "warm" | "direct">("warm");
+  
+  // Team management states
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showInviteLinkModal, setShowInviteLinkModal] = useState(false);
+  const [invites, setInvites] = useState<TeamInvite[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [inviteLink, setInviteLink] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch team members with real resonance scores
   const { data: users, isLoading, refetch } = useUsers({ pollInterval: 30000 });
   const { sendPing, isLoading: isSendingPing } = useSendPing();
+  const { data: team, refetch: refetchTeam } = useTeam();
+  
+  // Fetch pending invites
+  const fetchInvites = useCallback(async () => {
+    try {
+      const res = await fetch("/api/team/invites");
+      if (res.ok) {
+        const data = await res.json();
+        setInvites(data);
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInvites();
+  }, [fetchInvites]);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/team/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to send invite");
+        return;
+      }
+      
+      const data = await res.json();
+      const fullLink = `${window.location.origin}${data.inviteLink}`;
+      setInviteLink(fullLink);
+      setInviteEmail("");
+      setShowInviteModal(false);
+      setShowInviteLinkModal(true);
+      fetchInvites();
+    } catch {
+      alert("Failed to send invite");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelInvite = async (inviteId: string) => {
+    if (!confirm("Cancel this invite?")) return;
+    try {
+      const res = await fetch(`/api/team/invites?inviteId=${inviteId}`, { method: "DELETE" });
+      if (res.ok) fetchInvites();
+    } catch {
+      alert("Failed to cancel invite");
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!confirm(`Remove ${memberName} from the team?`)) return;
+    try {
+      const res = await fetch(`/api/team/members?memberId=${memberId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to remove member");
+        return;
+      }
+      refetch();
+      refetchTeam();
+    } catch {
+      alert("Failed to remove member");
+    }
+  };
+
+  const handleChangeRole = async (memberId: string, newRole: string) => {
+    try {
+      const res = await fetch("/api/team/members", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, role: newRole }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to update role");
+        return;
+      }
+      refetch();
+      refetchTeam();
+    } catch {
+      alert("Failed to update role");
+    }
+  };
+
+  const canManage = team?.currentUserRole === "owner" || team?.currentUserRole === "admin";
+  const isOwner = team?.currentUserRole === "owner";
 
   // Transform users to team members
   const teamMembers: TeamMember[] = (users ?? []).map(user => ({
@@ -85,11 +207,23 @@ export default function ConstellationPage() {
     <div className="min-h-[calc(100vh-4rem)] p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-stellar text-text-stellar mb-2">Constellation</h1>
-          <p className="text-moon text-text-dim">
-            Your team as celestial bodies
-          </p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-stellar text-text-stellar mb-2">
+              {team?.name || "Constellation"}
+            </h1>
+            <p className="text-moon text-text-dim">
+              {team?.description || "Your team as celestial bodies"}
+            </p>
+          </div>
+          {canManage && (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="px-4 py-2 bg-accent-primary/20 text-accent-primary border border-accent-primary/50 rounded-lg hover:bg-accent-primary/30 transition-colors"
+            >
+              + Invite
+            </button>
+          )}
         </div>
 
         {/* Filters */}
@@ -187,6 +321,41 @@ export default function ConstellationPage() {
                     </div>
                   </div>
 
+                  {/* Team Role Badge */}
+                  {member.role && (
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className={`px-2 py-0.5 text-xs rounded-full capitalize ${roleColors[member.role]?.bg ?? roleColors.member!.bg} ${roleColors[member.role]?.text ?? roleColors.member!.text}`}>
+                        {member.role}
+                      </span>
+                      {/* Owner actions */}
+                      {isOwner && member.role !== "owner" && (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={member.role}
+                            onChange={(e) => handleChangeRole(member.id, e.target.value)}
+                            className="px-2 py-1 text-xs bg-void-atmosphere border border-void-atmosphere rounded text-text-bright cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveMember(member.id, member.name);
+                            }}
+                            className="p-1 text-text-muted hover:text-accent-warning transition-colors"
+                            title="Remove member"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="flex gap-2">
                     <button
@@ -251,6 +420,39 @@ export default function ConstellationPage() {
                 </div>
                 <div className="text-sm text-text-muted">Celebrating</div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Invites Section */}
+        {canManage && invites.length > 0 && (
+          <div className="mt-8 glass-panel p-6 rounded-xl">
+            <h2 className="text-lg font-semibold text-text-bright mb-4">
+              Pending Invites ({invites.length})
+            </h2>
+            <div className="space-y-3">
+              {invites.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="flex items-center justify-between p-4 bg-void-deep/50 rounded-lg"
+                >
+                  <div>
+                    <div className="text-text-bright">{invite.email}</div>
+                    <div className="text-sm text-text-muted">
+                      Invited as {invite.role} by {invite.invitedBy.name}
+                    </div>
+                    <div className="text-xs text-text-dim">
+                      Expires {new Date(invite.expiresAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleCancelInvite(invite.id)}
+                    className="px-3 py-1 text-sm border border-void-atmosphere rounded text-text-muted hover:text-accent-warning hover:border-accent-warning transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -374,6 +576,102 @@ export default function ConstellationPage() {
             setSelectedMember(null);
           }}
         />
+      )}
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-void-deep/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-panel p-6 rounded-xl w-full max-w-md">
+            <h2 className="text-xl font-semibold text-text-bright mb-4">
+              Invite Team Member
+            </h2>
+            <form onSubmit={handleInvite}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-text-muted mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="colleague@example.com"
+                    className="w-full px-3 py-2 bg-void-deep border border-void-atmosphere rounded-lg text-text-bright placeholder-text-dim focus:outline-none focus:border-accent-primary"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-text-muted mb-1">
+                    Role
+                  </label>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="w-full px-3 py-2 bg-void-deep border border-void-atmosphere rounded-lg text-text-bright focus:outline-none focus:border-accent-primary"
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1 px-4 py-2 border border-void-atmosphere rounded-lg text-text-muted hover:text-text-bright transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!inviteEmail.trim() || isSubmitting}
+                  className="flex-1 px-4 py-2 bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? "Sending..." : "Send Invite"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Link Modal */}
+      {showInviteLinkModal && (
+        <div className="fixed inset-0 bg-void-deep/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-panel p-6 rounded-xl w-full max-w-md">
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">✉️</div>
+              <h2 className="text-xl font-semibold text-text-bright">
+                Invite Created!
+              </h2>
+            </div>
+            <p className="text-text-muted text-sm mb-4 text-center">
+              Share this link with your teammate:
+            </p>
+            <div className="bg-void-deep p-3 rounded-lg mb-4">
+              <code className="text-accent-primary text-sm break-all">
+                {inviteLink}
+              </code>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(inviteLink);
+                  alert("Link copied to clipboard!");
+                }}
+                className="flex-1 px-4 py-2 bg-accent-primary text-void-deep rounded-lg hover:bg-accent-primary/90 transition-colors"
+              >
+                Copy Link
+              </button>
+              <button
+                onClick={() => setShowInviteLinkModal(false)}
+                className="flex-1 px-4 py-2 border border-void-atmosphere rounded-lg text-text-muted hover:text-text-bright transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

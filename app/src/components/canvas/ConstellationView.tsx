@@ -15,6 +15,10 @@ export interface TeamMember {
   positionX?: number;
   positionY?: number;
   positionZ?: number;
+  /** Number of active work items (kindling/blazing) */
+  activeWorkItems?: number;
+  /** Current calculated energy level (0-100) */
+  currentEnergyLevel?: number;
 }
 
 interface ConstellationViewProps {
@@ -143,6 +147,8 @@ export function ConstellationView({
           orbitalState={member.orbitalState as OrbitalState}
           position={member.position}
           color={member.energySignatureColor}
+          activeWorkItems={member.activeWorkItems ?? 0}
+          energyLevel={member.currentEnergyLevel ?? 50}
         />
       ))}
     </group>

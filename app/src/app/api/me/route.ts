@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, teamMemberships, teams } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { StarType, OrbitalState, UserPreferences } from "@/lib/db/schema";
+import { calculateEnergyLevel } from "@/lib/db/energy";
 
 // GET /api/me - Get current user profile
 export async function GET() {
@@ -57,8 +58,12 @@ export async function GET() {
     // Don't return password hash
     const { passwordHash, ...safeUser } = user;
 
+    // Calculate dynamic energy level
+    const currentEnergyLevel = await calculateEnergyLevel(user.id);
+
     return NextResponse.json({
       ...safeUser,
+      currentEnergyLevel, // Override static value with calculated
       team: membership[0] ?? null,
     });
   } catch (error) {

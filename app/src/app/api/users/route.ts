@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { users, teamMemberships, resonanceConnections, workItems, streamDivers } from "@/lib/db/schema";
+import { users, teamMemberships, resonanceConnections, workItems, streamDivers, workItemContributors } from "@/lib/db/schema";
 import { eq, or, and, isNull, count, gte, sql } from "drizzle-orm";
+import { calculateEnergyLevel } from "@/lib/db/energy";
 
 // GET /api/users - List team members
 export async function GET(request: NextRequest) {
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       resonanceMap.set(otherUserId, conn.score);
     }
 
-    // Get crystals and active streams for each member
+    // Get crystals, active streams, and calculated energy for each member
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
 
@@ -104,11 +105,31 @@ export async function GET(request: NextRequest) {
             )
           );
 
+        // Get active work items (kindling or blazing) for dynamic star visualization
+        const [activeWorkItems] = await db
+          .select({ count: count(workItems.id) })
+          .from(workItems)
+          .innerJoin(workItemContributors, eq(workItems.id, workItemContributors.workItemId))
+          .where(
+            and(
+              eq(workItemContributors.userId, member.id),
+              or(
+                eq(workItems.energyState, "kindling"),
+                eq(workItems.energyState, "blazing")
+              )
+            )
+          );
+
+        // Calculate dynamic energy level
+        const calculatedEnergy = await calculateEnergyLevel(member.id);
+
         return {
           ...member,
+          currentEnergyLevel: calculatedEnergy, // Override static value with calculated
           resonanceScore: member.id === currentUserId ? null : (resonanceMap.get(member.id) ?? 0),
           crystalsThisWeek: Number(crystals?.count ?? 0),
           activeStreams: Number(activeStreams?.count ?? 0),
+          activeWorkItems: Number(activeWorkItems?.count ?? 0), // For dynamic star visualization
         };
       })
     );

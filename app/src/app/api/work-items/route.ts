@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const streamId = searchParams.get("streamId");
     const energyState = searchParams.get("energyState");
     const userId = searchParams.get("userId");
+    const includeClosed = searchParams.get("includeClosed") === "true";
 
     // Get user's team
     const membership = await db.query.teamMemberships.findFirst({
@@ -35,12 +36,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Get active streams for user's team (exclude evaporated/deleted streams)
+    // Get streams for user's team (optionally including closed ones)
+    const streamWhereCondition = includeClosed
+      ? eq(streams.teamId, membership.teamId)
+      : and(
+          eq(streams.teamId, membership.teamId),
+          isNull(streams.evaporatedAt)
+        );
+
     const teamStreams = await db.query.streams.findMany({
-      where: and(
-        eq(streams.teamId, membership.teamId),
-        isNull(streams.evaporatedAt)
-      ),
+      where: streamWhereCondition,
       columns: { id: true },
     });
 

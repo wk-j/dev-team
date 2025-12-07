@@ -24,19 +24,13 @@ function useData<T>(
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const fetcherRef = useRef(fetcher);
   const isMountedRef = useRef(true);
-
-  // Keep fetcher ref updated
-  useEffect(() => {
-    fetcherRef.current = fetcher;
-  }, [fetcher]);
 
   const fetchData = useCallback(async () => {
     if (!enabled) return;
     
     try {
-      const result = await fetcherRef.current();
+      const result = await fetcher();
       if (isMountedRef.current) {
         setData(result);
         setError(null);
@@ -48,9 +42,9 @@ function useData<T>(
         setIsLoading(false);
       }
     }
-  }, [enabled]);
+  }, [enabled, fetcher]);
 
-  // Initial fetch
+  // Fetch when fetcher changes or on mount
   useEffect(() => {
     isMountedRef.current = true;
     fetchData();
@@ -72,8 +66,13 @@ function useData<T>(
 }
 
 // Streams hooks
-export function useStreams(options?: UseDataOptions): UseDataResult<Stream[]> {
-  const fetcher = useCallback(() => api.getStreams(), []);
+interface UseStreamsOptions extends UseDataOptions {
+  includeClosed?: boolean;
+}
+
+export function useStreams(options?: UseStreamsOptions): UseDataResult<Stream[]> {
+  const includeClosed = options?.includeClosed ?? false;
+  const fetcher = useCallback(() => api.getStreams({ includeClosed }), [includeClosed]);
   return useData(fetcher, options);
 }
 
@@ -87,12 +86,12 @@ export function useStream(
 
 // Work items hooks
 export function useWorkItems(
-  filters?: { streamId?: string; energyState?: string; userId?: string },
+  filters?: { streamId?: string; energyState?: string; userId?: string; includeClosed?: boolean },
   options?: UseDataOptions
 ): UseDataResult<WorkItem[]> {
   const fetcher = useCallback(
     () => api.getWorkItems(filters), 
-    [filters?.streamId, filters?.energyState, filters?.userId]
+    [filters?.streamId, filters?.energyState, filters?.userId, filters?.includeClosed]
   );
   return useData(fetcher, options);
 }

@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
+  // Check if we should include closed (evaporated) streams
+  const { searchParams } = new URL(request.url);
+  const includeClosed = searchParams.get("includeClosed") === "true";
+
   try {
     // Get user's team membership
     const membership = await db.query.teamMemberships.findFirst({
@@ -24,12 +28,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Get all active streams for the team with divers
+    // Get streams for the team (optionally including closed ones)
+    const whereCondition = includeClosed
+      ? eq(streams.teamId, membership.teamId)
+      : and(
+          eq(streams.teamId, membership.teamId),
+          isNull(streams.evaporatedAt)
+        );
+
     const teamStreams = await db.query.streams.findMany({
-      where: and(
-        eq(streams.teamId, membership.teamId),
-        isNull(streams.evaporatedAt)
-      ),
+      where: whereCondition,
       orderBy: (streams, { asc }) => [asc(streams.createdAt)],
     });
 

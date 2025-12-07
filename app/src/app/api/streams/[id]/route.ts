@@ -120,7 +120,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     if (name !== undefined) updateData.name = name.trim();
     if (description !== undefined) updateData.description = description?.trim() || null;
-    if (state !== undefined) updateData.state = state;
+    if (state !== undefined) {
+      updateData.state = state;
+      // If reopening a closed stream (any state other than evaporated), clear evaporatedAt
+      if (state !== "evaporated" && stream.evaporatedAt) {
+        updateData.evaporatedAt = null;
+      }
+    }
     if (velocity !== undefined) updateData.velocity = velocity;
     if (pathPoints !== undefined) updateData.pathPoints = pathPoints;
 

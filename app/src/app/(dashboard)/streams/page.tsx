@@ -50,8 +50,9 @@ const transitions: Record<string, { to: string; label: string; color: string }[]
 };
 
 export default function StreamsPage() {
-  const { data: streams, isLoading, refetch } = useStreams({ pollInterval: 30000 });
-  const { data: workItems, refetch: refetchWorkItems } = useWorkItems();
+  const [showClosedStreams, setShowClosedStreams] = useState(false);
+  const { data: streams, isLoading, refetch } = useStreams({ pollInterval: 30000, includeClosed: showClosedStreams });
+  const { data: workItems, refetch: refetchWorkItems } = useWorkItems({ includeClosed: showClosedStreams });
   const { createStream, isLoading: isCreating } = useCreateStream();
   const { updateStream } = useUpdateStream();
   const { deleteStream } = useDeleteStream();
@@ -76,6 +77,10 @@ export default function StreamsPage() {
   const [editTags, setEditTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
+  
+  // Separate active and closed streams
+  const activeStreams = streams?.filter(s => !s.evaporatedAt) ?? [];
+  const closedStreams = streams?.filter(s => s.evaporatedAt) ?? [];
 
   // Group work items by stream
   const itemsByStream = workItems?.reduce((acc, item) => {
@@ -197,7 +202,8 @@ export default function StreamsPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
-          {streams?.map((stream) => {
+          {/* Active Streams */}
+          {activeStreams.map((stream) => {
             const items = itemsByStream[stream.id] ?? [];
             const active = items.filter(i => i.energyState === "kindling" || i.energyState === "blazing").length;
             const isSelected = stream.id === selectedStreamId;
@@ -243,11 +249,75 @@ export default function StreamsPage() {
             );
           })}
 
-          {(!streams || streams.length === 0) && (
+          {activeStreams.length === 0 && !showClosedStreams && (
             <div className="text-center py-8 text-text-dim text-sm">
               No streams yet
             </div>
           )}
+
+          {/* Closed Streams Section */}
+          {showClosedStreams && closedStreams.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-void-atmosphere">
+              <div className="text-xs text-text-dim uppercase tracking-wider px-3 mb-2">
+                Closed Streams
+              </div>
+              {closedStreams.map((stream) => {
+                const items = itemsByStream[stream.id] ?? [];
+                const isSelected = stream.id === selectedStreamId;
+
+                return (
+                  <button
+                    key={stream.id}
+                    onClick={() => setSelectedStreamId(stream.id)}
+                    className={`w-full text-left p-3 rounded-lg mb-1 transition-colors opacity-60 hover:opacity-100 ${
+                      isSelected 
+                        ? "bg-gray-500/20 border border-gray-500/50" 
+                        : "hover:bg-void-atmosphere border border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0 bg-gray-600" title="Closed" />
+                        <span className={`font-medium truncate ${isSelected ? "text-gray-400" : "text-text-muted"}`}>
+                          {stream.name}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-text-dim">
+                      <span>{items.length} items</span>
+                      <span>{stream.crystalCount} done</span>
+                      <span>Closed {new Date(stream.evaporatedAt!).toLocaleDateString()}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Show Closed Streams Toggle */}
+        <div className="p-3 border-t border-void-atmosphere">
+          <button
+            onClick={() => setShowClosedStreams(!showClosedStreams)}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-void-atmosphere transition-colors"
+          >
+            <span className="text-text-muted">
+              {showClosedStreams ? "Hide closed" : "Show closed"}
+            </span>
+            <span className="text-text-dim">
+              {closedStreams.length > 0 && !showClosedStreams && `(${closedStreams.length})`}
+              {showClosedStreams && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              )}
+              {!showClosedStreams && closedStreams.length > 0 && (
+                <svg className="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -301,23 +371,38 @@ export default function StreamsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowCreateItem(true)}
-                    className="px-3 py-1.5 text-sm bg-accent-primary/20 text-accent-primary border border-accent-primary/50 rounded-lg hover:bg-accent-primary/30 transition-colors"
-                  >
-                    + New Item
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!confirm(`Close "${selectedStream.name}"?\n\nThis will archive the stream and hide it from the Observatory. Work items will be preserved.`)) return;
-                      await deleteStream(selectedStream.id);
-                      setSelectedStreamId(null);
-                      refetch();
-                    }}
-                    className="px-3 py-1.5 text-sm text-text-muted hover:text-text-bright hover:bg-void-atmosphere rounded-lg transition-colors"
-                  >
-                    Close Stream
-                  </button>
+                  {!selectedStream.evaporatedAt ? (
+                    <>
+                      <button
+                        onClick={() => setShowCreateItem(true)}
+                        className="px-3 py-1.5 text-sm bg-accent-primary/20 text-accent-primary border border-accent-primary/50 rounded-lg hover:bg-accent-primary/30 transition-colors"
+                      >
+                        + New Item
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Close "${selectedStream.name}"?\n\nThis will archive the stream and hide it from the Observatory. Work items will be preserved.`)) return;
+                          await deleteStream(selectedStream.id);
+                          setSelectedStreamId(null);
+                          refetch();
+                        }}
+                        className="px-3 py-1.5 text-sm text-text-muted hover:text-text-bright hover:bg-void-atmosphere rounded-lg transition-colors"
+                      >
+                        Close Stream
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Reopen "${selectedStream.name}"?`)) return;
+                        await updateStream(selectedStream.id, { state: "stagnant" });
+                        refetch();
+                      }}
+                      className="px-3 py-1.5 text-sm bg-green-500/20 text-green-400 border border-green-500/50 rounded-lg hover:bg-green-500/30 transition-colors"
+                    >
+                      Reopen Stream
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

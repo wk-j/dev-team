@@ -39,6 +39,7 @@ export interface Stream {
   divers: StreamDiver[];
   createdAt: string;
   updatedAt: string;
+  evaporatedAt: string | null;
 }
 
 export interface WorkItemContributor {
@@ -142,8 +143,11 @@ class ApiClient {
   }
 
   // Streams
-  async getStreams(): Promise<Stream[]> {
-    return this.fetch<Stream[]>("/streams");
+  async getStreams(options?: { includeClosed?: boolean }): Promise<Stream[]> {
+    const params = new URLSearchParams();
+    if (options?.includeClosed) params.set("includeClosed", "true");
+    const query = params.toString();
+    return this.fetch<Stream[]>(`/streams${query ? `?${query}` : ""}`);
   }
 
   async getStream(id: string): Promise<Stream & { workItems: WorkItem[] }> {
@@ -193,11 +197,13 @@ class ApiClient {
     streamId?: string;
     energyState?: string;
     userId?: string;
+    includeClosed?: boolean;
   }): Promise<WorkItem[]> {
     const params = new URLSearchParams();
     if (filters?.streamId) params.set("streamId", filters.streamId);
     if (filters?.energyState) params.set("energyState", filters.energyState);
     if (filters?.userId) params.set("userId", filters.userId);
+    if (filters?.includeClosed) params.set("includeClosed", "true");
 
     const query = params.toString();
     return this.fetch<WorkItem[]>(`/work-items${query ? `?${query}` : ""}`);
