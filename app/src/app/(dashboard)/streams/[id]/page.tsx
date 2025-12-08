@@ -9,19 +9,18 @@ import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
 import type { WorkItem as WorkItemType } from "@/lib/api/client";
 
-// Format duration to compact format (0s, 10s, 1m, 1h)
+// Format duration to show time with visible updates (e.g., "6:42" or "1:23:45")
 function formatDurationCompact(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
   
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  
   if (hours > 0) {
-    return `${hours}h`;
+    return `${hours}:${pad(minutes)}:${pad(secs)}`;
   }
-  if (minutes > 0) {
-    return `${minutes}m`;
-  }
-  return `${secs}s`;
+  return `${minutes}:${pad(secs)}`;
 }
 
 // Time Tracker Component - Compact inline version
