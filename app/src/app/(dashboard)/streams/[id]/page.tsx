@@ -499,6 +499,8 @@ function WorkItemDetailPanel({
   onStateChange: (newState: string) => void;
   onDepthChange: (newDepth: string) => void;
 }) {
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
+  
   const stateColors: Record<string, string> = {
     dormant: "#6b7280",
     kindling: "#f97316",
@@ -506,6 +508,14 @@ function WorkItemDetailPanel({
     cooling: "#a78bfa",
     crystallized: "#06b6d4",
   };
+  const stateLabels: Record<string, string> = {
+    dormant: "Dormant",
+    kindling: "Kindling",
+    blazing: "Blazing",
+    cooling: "Cooling",
+    crystallized: "Crystallized",
+  };
+  const allStates = ["dormant", "kindling", "blazing", "cooling", "crystallized"];
   const color = stateColors[item.energyState] ?? "#6b7280";
 
   // Valid state transitions
@@ -546,15 +556,66 @@ function WorkItemDetailPanel({
           )}
         </div>
 
-        {/* Status */}
+        {/* Status - clickable dropdown */}
         <div className="flex items-center gap-2 mb-4">
-          <span
-            className="px-2 py-1 rounded-lg text-xs font-medium capitalize"
-            style={{ backgroundColor: color + "20", color }}
-          >
-            {item.energyState}
-          </span>
-          <span className="text-xs text-text-muted capitalize">{item.depth} depth</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowStateDropdown(!showStateDropdown)}
+              className="px-2 py-1 rounded-lg text-xs font-medium capitalize flex items-center gap-1 transition-colors hover:opacity-80"
+              style={{ backgroundColor: color + "20", color }}
+            >
+              {item.energyState}
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* State dropdown */}
+            {showStateDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-40 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-lg shadow-2xl overflow-hidden z-50">
+                <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-text-muted border-b border-void-atmosphere">
+                  Change Status
+                </div>
+                {allStates.map((state) => {
+                  const stateColor = stateColors[state]!;
+                  const isCurrentState = state === item.energyState;
+                  const isValidTransition = availableTransitions.some(t => t.to === state);
+                  const isDisabled = !isCurrentState && !isValidTransition;
+                  return (
+                    <button
+                      key={state}
+                      onClick={() => {
+                        if (!isCurrentState && isValidTransition) {
+                          onStateChange(state);
+                        }
+                        setShowStateDropdown(false);
+                      }}
+                      disabled={isDisabled}
+                      className={`w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 transition-colors ${
+                        isCurrentState
+                          ? "bg-accent-primary/10 text-accent-primary"
+                          : isDisabled
+                          ? "text-text-muted/40 cursor-not-allowed"
+                          : "text-text-muted hover:text-text-bright hover:bg-void-surface/50"
+                      }`}
+                    >
+                      <span 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: stateColor, opacity: isDisabled ? 0.4 : 1 }} 
+                      />
+                      {stateLabels[state]}
+                      {isCurrentState && (
+                        <svg className="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <span className="text-xs text-text-muted capitalize">{item.depth} Depth</span>
           <div className="ml-auto">
             <TimeTracker workItemId={item.id} />
           </div>

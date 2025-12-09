@@ -29,7 +29,7 @@ const VoidCanvas = dynamic(
 export default function ObservatoryPage() {
   const router = useRouter();
   const [showPerformance, setShowPerformance] = useState(false);
-  const [showStats, setShowStats] = useState(true);
+  const [showStats, setShowStats] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [diveMode, setDiveMode] = useState<DiveModeState | null>(null);
   

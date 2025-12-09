@@ -67,6 +67,99 @@ const depthConfig: Record<WorkItemDepth, { label: string; color: string; bg: str
   abyssal: { label: "Abyssal", color: "text-purple-400", bg: "bg-purple-500/20" },
 };
 
+// State colors for visual effects
+const stateColors: Record<EnergyState, string> = {
+  dormant: "#6b7280",
+  kindling: "#f97316",
+  blazing: "#fbbf24",
+  cooling: "#a78bfa",
+  crystallized: "#06b6d4",
+};
+
+// Focused item highlight with pulsing rings
+function FocusedItemHighlight({ 
+  position, 
+  energyState 
+}: { 
+  position: [number, number, number]; 
+  energyState: EnergyState;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const ring1Ref = useRef<THREE.Mesh>(null);
+  const ring2Ref = useRef<THREE.Mesh>(null);
+  
+  const color = stateColors[energyState];
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+
+    // Rotate the whole group slowly
+    if (groupRef.current) {
+      groupRef.current.rotation.y = t * 0.2;
+    }
+
+    // Pulsing rings with staggered animation
+    [ring1Ref, ring2Ref].forEach((ref, i) => {
+      if (ref.current) {
+        const offset = i * 0.5;
+        const scale = 1 + Math.sin(t * 1.5 + offset) * 0.1;
+        ref.current.scale.setScalar(scale);
+        const mat = ref.current.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.25 + Math.sin(t * 2 + offset) * 0.1;
+      }
+    });
+  });
+
+  return (
+    <group position={position} ref={groupRef}>
+      {/* Inner glow sphere */}
+      <mesh>
+        <sphereGeometry args={[1.8, 16, 16]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.06}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Pulsing rings */}
+      <mesh ref={ring1Ref} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.2, 2.35, 48]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.3}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh ref={ring2Ref} rotation={[Math.PI / 3, Math.PI / 4, 0]}>
+        <ringGeometry args={[2.5, 2.6, 48]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.2}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Subtle point light */}
+      <pointLight
+        color={color}
+        intensity={1}
+        distance={6}
+        decay={2}
+      />
+    </group>
+  );
+}
+
 // Get point on the stream path curve (must match DiveStreamPath)
 function getStreamPoint(t: number): [number, number, number] {
   const x = (t - 0.5) * 50;
@@ -485,17 +578,12 @@ export function DiveMode({
             position={item.position}
             onClick={() => setSelectedItemId(selectedItemId === item.id ? null : item.id)}
           />
-          {/* Highlight for selected item */}
+          {/* Enhanced highlight for selected/focused item */}
           {selectedItemId === item.id && (
-            <mesh position={item.position}>
-              <ringGeometry args={[2, 2.3, 32]} />
-              <meshBasicMaterial
-                color="#00d4ff"
-                transparent
-                opacity={0.5}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
+            <FocusedItemHighlight 
+              position={item.position} 
+              energyState={item.energyState}
+            />
           )}
         </group>
       ))}
@@ -594,106 +682,198 @@ export function DiveMode({
               </div>
             )}
 
-            {/* Selected item panel with state transitions */}
+            {/* Enhanced selected item panel with rich visuals */}
             {selectedItem && (
-            <div className="absolute bottom-4 right-4 pointer-events-auto">
-              <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl p-4 min-w-[280px] max-w-[320px]">
+            <div className="absolute bottom-4 right-4 pointer-events-auto animate-in slide-in-from-right-4 fade-in duration-300">
+              <div 
+                className="relative bg-void-deep/95 backdrop-blur-xl border rounded-2xl p-5 min-w-[320px] max-w-[360px] shadow-2xl overflow-hidden"
+                style={{ 
+                  borderColor: `${stateColors[selectedItem.energyState]}40`,
+                  boxShadow: `0 0 40px ${stateColors[selectedItem.energyState]}15, 0 25px 50px rgba(0,0,0,0.5)`,
+                }}
+              >
+                {/* Animated gradient background */}
+                <div 
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    background: `radial-gradient(ellipse at top right, ${stateColors[selectedItem.energyState]}40 0%, transparent 60%)`,
+                  }}
+                />
+                
+                {/* Top accent line with glow */}
+                <div 
+                  className="absolute top-0 left-0 right-0 h-0.5"
+                  style={{ 
+                    background: `linear-gradient(90deg, transparent, ${stateColors[selectedItem.energyState]}, transparent)`,
+                    boxShadow: `0 0 20px ${stateColors[selectedItem.energyState]}`,
+                  }}
+                />
+
                 {/* Close button */}
                 <button
                   onClick={() => setSelectedItemId(null)}
-                  className="absolute top-2 right-2 text-text-muted hover:text-text-bright transition-colors"
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-void-surface/50 hover:bg-void-surface text-text-muted hover:text-text-bright transition-all flex items-center justify-center z-10"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3 pr-6">
-                  <h3 className="text-base font-medium text-text-bright leading-tight">
+
+                {/* Content */}
+                <div className="relative z-10">
+                  {/* Status indicator with animation */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative">
+                      <div 
+                        className="w-3 h-3 rounded-full animate-pulse"
+                        style={{ 
+                          backgroundColor: stateColors[selectedItem.energyState],
+                          boxShadow: `0 0 12px ${stateColors[selectedItem.energyState]}, 0 0 24px ${stateColors[selectedItem.energyState]}60`,
+                        }}
+                      />
+                      {/* Ping animation for active states */}
+                      {(selectedItem.energyState === "blazing" || selectedItem.energyState === "kindling") && (
+                        <div 
+                          className="absolute inset-0 rounded-full animate-ping"
+                          style={{ backgroundColor: stateColors[selectedItem.energyState], opacity: 0.4 }}
+                        />
+                      )}
+                    </div>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                      style={{ 
+                        backgroundColor: `${stateColors[selectedItem.energyState]}20`,
+                        color: stateColors[selectedItem.energyState],
+                        border: `1px solid ${stateColors[selectedItem.energyState]}40`,
+                      }}
+                    >
+                      {selectedItem.energyState === "crystallized" ? "Completed" : selectedItem.energyState}
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-lg font-semibold text-text-bright leading-snug mb-2 pr-8">
                     {selectedItem.title}
                   </h3>
-                </div>
 
-                {/* Current state badge */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs text-text-muted">Status:</span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      selectedItem.energyState === "crystallized"
-                        ? "bg-cyan-500/20 text-cyan-400"
-                        : selectedItem.energyState === "blazing"
-                        ? "bg-yellow-500/20 text-yellow-400"
-                        : selectedItem.energyState === "kindling"
-                        ? "bg-orange-500/20 text-orange-400"
-                        : selectedItem.energyState === "cooling"
-                        ? "bg-purple-500/20 text-purple-400"
-                        : "bg-gray-500/20 text-gray-400"
-                    }`}
-                  >
-                    {selectedItem.energyState === "crystallized" ? "Done" : selectedItem.energyState}
-                  </span>
-                </div>
+                  {/* Description */}
+                  {selectedItem.description && (
+                    <p className="text-sm text-text-dim mb-4 line-clamp-2 leading-relaxed">
+                      {selectedItem.description}
+                    </p>
+                  )}
 
-                {/* Description */}
-                {selectedItem.description && (
-                  <p className="text-sm text-text-dim mb-3 line-clamp-2">
-                    {selectedItem.description}
-                  </p>
-                )}
-
-                {/* Depth selector */}
-                <div className="mb-3">
-                  <div className="text-xs text-text-muted mb-1.5">Depth:</div>
-                  <div className="flex gap-1">
-                    {(["shallow", "medium", "deep", "abyssal"] as const).map((d) => {
-                      const config = depthConfig[d];
-                      const isSelected = selectedItem.depth === d;
-                      return (
-                        <button
-                          key={d}
-                          onClick={() => onDepthChange?.(selectedItem.id, d)}
-                          className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors border ${
-                            isSelected
-                              ? `${config.bg} ${config.color} border-current`
-                              : "border-void-atmosphere text-text-dim hover:border-void-surface hover:text-text-muted"
-                          }`}
-                        >
-                          {config.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* State transition buttons */}
-                {availableTransitions.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-text-muted">Actions:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {availableTransitions.map((t) => (
-                        <button
-                          key={t.to}
-                          onClick={() => {
-                            onStateChange?.(selectedItem.id, t.to);
-                            setSelectedItemId(null);
-                          }}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${t.color}`}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
+                  {/* Energy visualization bar */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center text-xs mb-1.5">
+                      <span className="text-text-muted font-medium">Energy Level</span>
+                      <span className="font-mono" style={{ color: stateColors[selectedItem.energyState] }}>
+                        {selectedItem.energyLevel}%
+                      </span>
+                    </div>
+                    <div className="h-2 bg-void-atmosphere/50 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500 relative"
+                        style={{ 
+                          width: `${selectedItem.energyLevel}%`, 
+                          backgroundColor: stateColors[selectedItem.energyState],
+                          boxShadow: `0 0 10px ${stateColors[selectedItem.energyState]}`,
+                        }}
+                      >
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                      </div>
                     </div>
                   </div>
-                )}
 
-                {/* Completed message */}
-                {selectedItem.energyState === "crystallized" && (
-                  <div className="text-sm text-cyan-400 flex items-center gap-2">
-                    <span>◇</span>
-                    <span>This work has crystallized</span>
+                  {/* Depth selector - visual wave */}
+                  <div className="mb-4">
+                    <div className="text-xs text-text-muted mb-2 font-medium">Depth Level</div>
+                    <div className="flex gap-1.5">
+                      {(["shallow", "medium", "deep", "abyssal"] as const).map((d, index) => {
+                        const config = depthConfig[d];
+                        const isSelected = selectedItem.depth === d;
+                        const depthIndex = ["shallow", "medium", "deep", "abyssal"].indexOf(selectedItem.depth);
+                        const isBeforeSelected = index <= depthIndex;
+                        
+                        return (
+                          <button
+                            key={d}
+                            onClick={() => onDepthChange?.(selectedItem.id, d)}
+                            className={`flex-1 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 relative overflow-hidden ${
+                              isSelected
+                                ? "text-white shadow-lg"
+                                : isBeforeSelected
+                                ? "text-text-bright"
+                                : "text-text-dim hover:text-text-muted"
+                            }`}
+                            style={{
+                              backgroundColor: isSelected 
+                                ? stateColors[selectedItem.energyState] 
+                                : isBeforeSelected 
+                                ? `${stateColors[selectedItem.energyState]}30`
+                                : "rgba(255,255,255,0.05)",
+                              boxShadow: isSelected ? `0 0 15px ${stateColors[selectedItem.energyState]}50` : "none",
+                            }}
+                          >
+                            {config.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
+
+                  {/* State transitions - prominent action buttons */}
+                  {availableTransitions.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-text-muted font-medium">Actions</div>
+                      <div className="flex flex-col gap-2">
+                        {availableTransitions.map((t, index) => (
+                          <button
+                            key={t.to}
+                            onClick={() => {
+                              onStateChange?.(selectedItem.id, t.to);
+                              setSelectedItemId(null);
+                            }}
+                            className={`w-full py-2.5 text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+                              index === 0 
+                                ? "bg-gradient-to-r text-white shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                                : "bg-void-surface/50 text-text-muted hover:text-text-bright hover:bg-void-surface"
+                            }`}
+                            style={index === 0 ? {
+                              background: `linear-gradient(135deg, ${stateColors[t.to]}, ${stateColors[t.to]}cc)`,
+                              boxShadow: `0 4px 20px ${stateColors[t.to]}40`,
+                            } : {}}
+                          >
+                            {t.to === "crystallized" && <span>◇</span>}
+                            {t.to === "blazing" && <span>🔥</span>}
+                            {t.to === "kindling" && <span>✨</span>}
+                            {t.to === "cooling" && <span>🌙</span>}
+                            {t.to === "dormant" && <span>💤</span>}
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Crystallized celebration */}
+                  {selectedItem.energyState === "crystallized" && (
+                    <div 
+                      className="flex items-center gap-3 p-3 rounded-xl mt-2"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${stateColors.crystallized}15, transparent)`,
+                        border: `1px solid ${stateColors.crystallized}30`,
+                      }}
+                    >
+                      <div className="text-2xl">💎</div>
+                      <div>
+                        <div className="text-sm font-medium text-cyan-400">Work Crystallized</div>
+                        <div className="text-xs text-text-dim">This task has been completed</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             )}
