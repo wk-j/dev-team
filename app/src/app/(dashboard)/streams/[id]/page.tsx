@@ -537,173 +537,295 @@ function WorkItemDetailPanel({
 
   return (
     <div className="absolute bottom-20 right-4 w-80 z-30">
-      <div className="bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-2xl p-4 shadow-2xl">
+      {/* Seamless canvas-integrated panel */}
+      <div 
+        className="relative rounded-2xl p-4 overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${color}08 0%, transparent 50%, ${color}05 100%)`,
+          boxShadow: `0 0 60px ${color}10, inset 0 0 30px ${color}05`,
+        }}
+      >
+        {/* Subtle animated border glow */}
+        <div 
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{
+            border: `1px solid ${color}30`,
+            boxShadow: `inset 0 1px 0 ${color}20`,
+          }}
+        />
+        
+        {/* Corner accents */}
+        <div 
+          className="absolute top-0 left-0 w-8 h-8 pointer-events-none"
+          style={{
+            borderTop: `2px solid ${color}50`,
+            borderLeft: `2px solid ${color}50`,
+            borderTopLeftRadius: '1rem',
+          }}
+        />
+        <div 
+          className="absolute top-0 right-0 w-8 h-8 pointer-events-none"
+          style={{
+            borderTop: `2px solid ${color}50`,
+            borderRight: `2px solid ${color}50`,
+            borderTopRightRadius: '1rem',
+          }}
+        />
+        <div 
+          className="absolute bottom-0 left-0 w-8 h-8 pointer-events-none"
+          style={{
+            borderBottom: `2px solid ${color}30`,
+            borderLeft: `2px solid ${color}30`,
+            borderBottomLeftRadius: '1rem',
+          }}
+        />
+        <div 
+          className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none"
+          style={{
+            borderBottom: `2px solid ${color}30`,
+            borderRight: `2px solid ${color}30`,
+            borderBottomRightRadius: '1rem',
+          }}
+        />
+
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-text-muted hover:text-text-bright transition-colors"
+          className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          style={{ 
+            background: `${color}20`,
+            color: color,
+          }}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
-        {/* Header */}
-        <div className="pr-8 mb-3">
-          <h3 className="text-base font-semibold text-text-bright leading-tight">{item.title}</h3>
-          {item.description && (
-            <p className="text-sm text-text-dim mt-1 line-clamp-2">{item.description}</p>
-          )}
-        </div>
+        {/* Content */}
+        <div className="relative">
+          {/* Header with state indicator */}
+          <div className="pr-8 mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div 
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+              />
+              <span className="text-[10px] uppercase tracking-wider" style={{ color }}>
+                {item.energyState === "crystallized" ? "Completed" : item.energyState}
+              </span>
+            </div>
+            <h3 className="text-base font-semibold text-text-bright leading-tight">{item.title}</h3>
+            {item.description && (
+              <p className="text-sm text-text-dim mt-1 line-clamp-2">{item.description}</p>
+            )}
+          </div>
 
-        {/* Status - clickable dropdown */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="relative">
-            <button
-              onClick={() => setShowStateDropdown(!showStateDropdown)}
-              className="px-2 py-1 rounded-lg text-xs font-medium capitalize flex items-center gap-1 transition-colors hover:opacity-80"
-              style={{ backgroundColor: color + "20", color }}
-            >
-              {item.energyState}
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {/* State dropdown */}
-            {showStateDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-40 bg-void-deep/95 backdrop-blur-xl border border-void-atmosphere rounded-lg shadow-2xl overflow-hidden z-50">
-                <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-text-muted border-b border-void-atmosphere">
-                  Change Status
+          {/* Status row */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative">
+              <button
+                onClick={() => setShowStateDropdown(!showStateDropdown)}
+                className="px-2.5 py-1 rounded-full text-xs font-medium capitalize flex items-center gap-1.5 transition-all hover:scale-105"
+                style={{ 
+                  background: `linear-gradient(135deg, ${color}25, ${color}15)`,
+                  color,
+                  boxShadow: `0 0 12px ${color}20`,
+                }}
+              >
+                {item.energyState}
+                <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* State dropdown */}
+              {showStateDropdown && (
+                <div 
+                  className="absolute top-full left-0 mt-2 w-40 rounded-xl overflow-hidden z-50"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(5, 8, 22, 0.95), rgba(10, 15, 30, 0.9))',
+                    boxShadow: `0 0 30px ${color}20, 0 10px 40px rgba(0,0,0,0.5)`,
+                    border: `1px solid ${color}30`,
+                  }}
+                >
+                  <div 
+                    className="px-3 py-2 text-[10px] uppercase tracking-wider"
+                    style={{ 
+                      color: `${color}80`,
+                      borderBottom: `1px solid ${color}20`,
+                    }}
+                  >
+                    Change Status
+                  </div>
+                  {allStates.map((state) => {
+                    const stateColor = stateColors[state]!;
+                    const isCurrentState = state === item.energyState;
+                    const isValidTransition = availableTransitions.some(t => t.to === state);
+                    const isDisabled = !isCurrentState && !isValidTransition;
+                    return (
+                      <button
+                        key={state}
+                        onClick={() => {
+                          if (!isCurrentState && isValidTransition) {
+                            onStateChange(state);
+                          }
+                          setShowStateDropdown(false);
+                        }}
+                        disabled={isDisabled}
+                        className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 transition-all ${
+                          isDisabled ? "opacity-30 cursor-not-allowed" : "hover:bg-white/5"
+                        }`}
+                        style={{
+                          color: isCurrentState ? stateColor : isDisabled ? '#666' : '#999',
+                          background: isCurrentState ? `${stateColor}15` : 'transparent',
+                        }}
+                      >
+                        <span 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ 
+                            backgroundColor: stateColor, 
+                            opacity: isDisabled ? 0.3 : 1,
+                            boxShadow: isCurrentState ? `0 0 6px ${stateColor}` : 'none',
+                          }} 
+                        />
+                        {stateLabels[state]}
+                        {isCurrentState && (
+                          <svg className="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-                {allStates.map((state) => {
-                  const stateColor = stateColors[state]!;
-                  const isCurrentState = state === item.energyState;
-                  const isValidTransition = availableTransitions.some(t => t.to === state);
-                  const isDisabled = !isCurrentState && !isValidTransition;
+              )}
+            </div>
+            <span className="text-xs text-text-muted/70 capitalize">{item.depth} Depth</span>
+            <div className="ml-auto">
+              <TimeTracker workItemId={item.id} />
+            </div>
+          </div>
+
+          {/* Energy Level - more integrated */}
+          <div className="mb-4">
+            <div className="flex justify-between text-xs mb-1.5">
+              <span className="text-text-muted/70">Energy</span>
+              <span style={{ color }}>{item.energyLevel}%</span>
+            </div>
+            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ 
+                  width: `${item.energyLevel}%`, 
+                  background: `linear-gradient(90deg, ${color}, ${color}80)`,
+                  boxShadow: `0 0 10px ${color}60`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Depth selector - seamless style */}
+          <div className="mb-4">
+            <div className="text-xs text-text-muted/70 mb-2">Change Depth:</div>
+            <div className="flex gap-1.5">
+              {(["shallow", "medium", "deep", "abyssal"] as const).map((d) => {
+                const isSelected = item.depth === d;
+                return (
+                  <button
+                    key={d}
+                    onClick={() => onDepthChange(d)}
+                    className="flex-1 px-2 py-1.5 rounded-lg text-xs capitalize transition-all"
+                    style={{
+                      background: isSelected 
+                        ? `linear-gradient(135deg, ${color}40, ${color}20)` 
+                        : 'rgba(255,255,255,0.03)',
+                      color: isSelected ? color : 'rgba(255,255,255,0.5)',
+                      boxShadow: isSelected ? `0 0 15px ${color}30` : 'none',
+                      border: `1px solid ${isSelected ? color + '50' : 'rgba(255,255,255,0.05)'}`,
+                    }}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* State transitions - glowing action buttons */}
+          {availableTransitions.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs text-text-muted/70">Actions:</div>
+              <div className="flex flex-wrap gap-2">
+                {availableTransitions.map((t) => {
+                  const targetColor = stateColors[t.to] ?? color;
                   return (
                     <button
-                      key={state}
-                      onClick={() => {
-                        if (!isCurrentState && isValidTransition) {
-                          onStateChange(state);
-                        }
-                        setShowStateDropdown(false);
+                      key={t.to}
+                      onClick={() => onStateChange(t.to)}
+                      className="px-4 py-2 text-sm rounded-lg transition-all hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${targetColor}30, ${targetColor}15)`,
+                        color: targetColor,
+                        boxShadow: `0 0 20px ${targetColor}20`,
+                        border: `1px solid ${targetColor}40`,
                       }}
-                      disabled={isDisabled}
-                      className={`w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 transition-colors ${
-                        isCurrentState
-                          ? "bg-accent-primary/10 text-accent-primary"
-                          : isDisabled
-                          ? "text-text-muted/40 cursor-not-allowed"
-                          : "text-text-muted hover:text-text-bright hover:bg-void-surface/50"
-                      }`}
                     >
-                      <span 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: stateColor, opacity: isDisabled ? 0.4 : 1 }} 
-                      />
-                      {stateLabels[state]}
-                      {isCurrentState && (
-                        <svg className="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
+                      {t.label}
                     </button>
                   );
                 })}
               </div>
-            )}
-          </div>
-          <span className="text-xs text-text-muted capitalize">{item.depth} Depth</span>
-          <div className="ml-auto">
-            <TimeTracker workItemId={item.id} />
-          </div>
-        </div>
-
-        {/* Energy Level */}
-        <div className="mb-4">
-          <div className="flex justify-between text-xs text-text-muted mb-1">
-            <span>Energy</span>
-            <span>{item.energyLevel}%</span>
-          </div>
-          <div className="h-2 bg-void-atmosphere rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${item.energyLevel}%`, backgroundColor: color }}
-            />
-          </div>
-        </div>
-
-        {/* Depth selector */}
-        <div className="mb-4">
-          <div className="text-xs text-text-muted mb-2">Change Depth:</div>
-          <div className="flex gap-1">
-            {(["shallow", "medium", "deep", "abyssal"] as const).map((d) => (
-              <button
-                key={d}
-                onClick={() => onDepthChange(d)}
-                className={`flex-1 px-2 py-1.5 rounded text-xs capitalize transition-colors border ${
-                  item.depth === d
-                    ? "bg-accent-primary/20 text-accent-primary border-accent-primary/50"
-                    : "border-void-atmosphere text-text-muted hover:text-text-bright hover:border-void-surface"
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* State transitions */}
-        {availableTransitions.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-xs text-text-muted">Actions:</div>
-            <div className="flex flex-wrap gap-2">
-              {availableTransitions.map((t) => (
-                <button
-                  key={t.to}
-                  onClick={() => onStateChange(t.to)}
-                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors bg-void-surface border-void-atmosphere text-text-muted hover:text-text-bright hover:border-accent-primary/50"
-                >
-                  {t.label}
-                </button>
-              ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Completed message */}
-        {item.energyState === "crystallized" && (
-          <div className="flex items-center gap-2 text-sm text-cyan-400">
-            <span>◇</span>
-            <span>This work has crystallized</span>
-          </div>
-        )}
+          {/* Completed message */}
+          {item.energyState === "crystallized" && (
+            <div 
+              className="flex items-center gap-2 text-sm p-3 rounded-lg"
+              style={{
+                background: `linear-gradient(135deg, ${color}15, transparent)`,
+                color,
+              }}
+            >
+              <span className="text-lg">◇</span>
+              <span>This work has crystallized</span>
+            </div>
+          )}
 
-        {/* Contributors */}
-        {item.contributors && item.contributors.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-void-atmosphere">
-            <div className="text-xs text-text-muted mb-2">Contributors:</div>
-            <div className="flex flex-wrap gap-2">
-              {item.contributors.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs"
-                  style={{ backgroundColor: c.energySignatureColor + "20" }}
-                >
+          {/* Contributors */}
+          {item.contributors && item.contributors.length > 0 && (
+            <div 
+              className="mt-4 pt-4"
+              style={{ borderTop: `1px solid ${color}20` }}
+            >
+              <div className="text-xs text-text-muted/70 mb-2">Contributors:</div>
+              <div className="flex flex-wrap gap-2">
+                {item.contributors.map((c) => (
                   <div
-                    className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-medium"
-                    style={{ backgroundColor: c.energySignatureColor + "40" }}
+                    key={c.id}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${c.energySignatureColor}20, ${c.energySignatureColor}10)`,
+                      border: `1px solid ${c.energySignatureColor}30`,
+                    }}
                   >
-                    {c.name.charAt(0)}
+                    <div
+                      className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-medium"
+                      style={{ 
+                        backgroundColor: c.energySignatureColor + "40",
+                        boxShadow: `0 0 6px ${c.energySignatureColor}40`,
+                      }}
+                    >
+                      {c.name.charAt(0)}
+                    </div>
+                    <span style={{ color: c.energySignatureColor + "cc" }}>{c.name}</span>
                   </div>
-                  <span className="text-text-dim">{c.name}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
