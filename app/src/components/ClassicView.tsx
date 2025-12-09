@@ -2,6 +2,12 @@
 
 import { useMemo } from "react";
 import type { Stream, WorkItem } from "@/lib/api/client";
+import {
+  ENERGY_STATE_CONFIG,
+  STREAM_STATE_CONFIG,
+  type EnergyState,
+  type StreamState,
+} from "@/lib/constants";
 
 interface ClassicViewProps {
   streams?: Stream[];
@@ -17,22 +23,15 @@ interface ClassicViewProps {
   onWorkItemClick?: (itemId: string) => void;
 }
 
-const energyStateColors: Record<string, string> = {
-  dormant: "#6b7280",
-  kindling: "#f97316",
-  blazing: "#fbbf24",
-  cooling: "#a78bfa",
-  crystallized: "#06b6d4",
-};
+// Use centralized config for colors
+const getEnergyColor = (state: string) => 
+  ENERGY_STATE_CONFIG[state as EnergyState]?.color ?? "#6b7280";
 
-const streamStateColors: Record<string, string> = {
-  nascent: "#6b7280",
-  flowing: "#10b981",
-  rushing: "#fbbf24",
-  flooding: "#ef4444",
-  stagnant: "#f97316",
-  evaporated: "#374151",
-};
+const getStreamColor = (state: string) => 
+  STREAM_STATE_CONFIG[state as StreamState]?.color ?? "#6b7280";
+
+const getEnergyLabel = (state: string) =>
+  ENERGY_STATE_CONFIG[state as EnergyState]?.label ?? state;
 
 const orbitalStateLabels: Record<string, { label: string; color: string }> = {
   open: { label: "Available", color: "#10b981" },
@@ -187,7 +186,7 @@ function StreamCard({
   onClick: () => void;
   onWorkItemClick?: (id: string) => void;
 }) {
-  const stateColor = streamStateColors[stream.state] || "#6b7280";
+  const stateColor = getStreamColor(stream.state);
 
   return (
     <div className="bg-void-surface border border-void-atmosphere rounded-lg overflow-hidden">
@@ -238,7 +237,7 @@ function WorkItemRow({
   item: WorkItem;
   onClick: () => void;
 }) {
-  const stateColor = energyStateColors[item.energyState] || "#6b7280";
+  const stateColor = getEnergyColor(item.energyState);
 
   return (
     <button
@@ -253,8 +252,8 @@ function WorkItemRow({
       <span className="text-sm text-text-bright truncate flex-1">
         {item.title}
       </span>
-      <span className="text-xs text-text-muted capitalize">
-        {item.energyState}
+      <span className="text-xs text-text-muted">
+        {getEnergyLabel(item.energyState)}
       </span>
     </button>
   );

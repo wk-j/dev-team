@@ -1,6 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import {
+  ENERGY_STATES,
+  ENERGY_STATE_CONFIG,
+  STREAM_STATES,
+  STREAM_STATE_CONFIG,
+  WORK_ITEM_DEPTHS,
+  WORK_ITEM_DEPTH_CONFIG,
+} from "@/lib/constants";
 
 interface ObservatoryGuideProps {
   isOpen: boolean;
@@ -77,34 +85,18 @@ export function ObservatoryGuide({ isOpen, onClose }: ObservatoryGuideProps) {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-text-bright">Stream States</h4>
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-1 bg-cyan-500 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Flowing</div>
-                  <div className="text-xs text-text-dim">Normal, healthy pace</div>
+              {STREAM_STATES.filter(s => s !== "evaporated").map((state) => (
+                <div key={state} className="flex items-center gap-3">
+                  <div 
+                    className="w-8 h-1 rounded-full"
+                    style={{ backgroundColor: STREAM_STATE_CONFIG[state].color }}
+                  ></div>
+                  <div className="flex-1">
+                    <div className="text-sm text-text-bright">{STREAM_STATE_CONFIG[state].label}</div>
+                    <div className="text-xs text-text-dim">{STREAM_STATE_CONFIG[state].description}</div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-1 bg-yellow-500 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Rushing</div>
-                  <div className="text-xs text-text-dim">High activity, fast moving</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-1 bg-red-500 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Flooding</div>
-                  <div className="text-xs text-text-dim">Overloaded, needs attention</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-1 bg-gray-600 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Stagnant</div>
-                  <div className="text-xs text-text-dim">Blocked or inactive</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -130,58 +122,41 @@ export function ObservatoryGuide({ isOpen, onClose }: ObservatoryGuideProps) {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-text-bright">Energy States</h4>
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-gray-600"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Dormant</div>
-                  <div className="text-xs text-text-dim">Not started yet, waiting for energy</div>
+              {ENERGY_STATES.map((state) => (
+                <div key={state} className="flex items-center gap-3">
+                  <div 
+                    className={`w-6 h-6 ${state === "crystallized" ? "rounded-lg" : "rounded-full"} ${state === "blazing" ? "animate-pulse" : ""}`}
+                    style={{ 
+                      backgroundColor: ENERGY_STATE_CONFIG[state].color,
+                      boxShadow: state !== "dormant" ? `0 10px 15px -3px ${ENERGY_STATE_CONFIG[state].color}50` : undefined,
+                      clipPath: state === "crystallized" ? "polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)" : undefined,
+                    }}
+                  ></div>
+                  <div className="flex-1">
+                    <div className="text-sm text-text-bright">
+                      {ENERGY_STATE_CONFIG[state].label} {state === "crystallized" && "✨"}
+                    </div>
+                    <div className="text-xs text-text-dim">{ENERGY_STATE_CONFIG[state].description}</div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-orange-500 shadow-lg shadow-orange-500/50"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Kindling</div>
-                  <div className="text-xs text-text-dim">Work has begun, building momentum</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Blazing</div>
-                  <div className="text-xs text-text-dim">Full energy, actively being worked</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-purple-500 shadow-lg shadow-purple-500/50"></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Cooling</div>
-                  <div className="text-xs text-text-dim">Wrapping up, almost done</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-cyan-500 shadow-lg shadow-cyan-500/50" style={{ clipPath: "polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)" }}></div>
-                <div className="flex-1">
-                  <div className="text-sm text-text-bright">Crystallized ✨</div>
-                  <div className="text-xs text-text-dim">Complete! Turned into a crystal</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-text-bright">Size = Complexity</h4>
-            <div className="flex items-center gap-2 text-xs text-text-muted">
-              <div className="w-3 h-3 rounded-full bg-accent-primary"></div>
-              <span>Small = Quick task</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-text-muted">
-              <div className="w-5 h-5 rounded-full bg-accent-primary"></div>
-              <span>Medium = Normal work</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-text-muted">
-              <div className="w-7 h-7 rounded-full bg-accent-primary"></div>
-              <span>Large = Complex task</span>
-            </div>
+            <h4 className="text-sm font-semibold text-text-bright">Size = Complexity (Depth)</h4>
+            {WORK_ITEM_DEPTHS.map((depth) => (
+              <div key={depth} className="flex items-center gap-2 text-xs text-text-muted">
+                <div 
+                  className="rounded-full bg-accent-primary"
+                  style={{ 
+                    width: `${12 + WORK_ITEM_DEPTH_CONFIG[depth].complexity * 4}px`,
+                    height: `${12 + WORK_ITEM_DEPTH_CONFIG[depth].complexity * 4}px`,
+                  }}
+                ></div>
+                <span>{WORK_ITEM_DEPTH_CONFIG[depth].label} = {WORK_ITEM_DEPTH_CONFIG[depth].description}</span>
+              </div>
+            ))}
           </div>
         </div>
       ),

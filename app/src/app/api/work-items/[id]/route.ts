@@ -10,7 +10,7 @@ import {
   teams,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import type { EnergyState } from "@/lib/db/schema";
+import { type EnergyState, isValidTransition } from "@/lib/constants";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -88,14 +88,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-// Valid energy state transitions
-const validTransitions: Record<EnergyState, EnergyState[]> = {
-  dormant: ["kindling"],
-  kindling: ["blazing", "dormant"],
-  blazing: ["cooling"],
-  cooling: ["crystallized", "blazing"],
-  crystallized: [],
-};
+// Valid energy state transitions - uses centralized config via isValidTransition()
 
 // PATCH /api/work-items/[id] - Update work item (including state transitions)
 export async function PATCH(request: NextRequest, context: RouteContext) {
@@ -151,8 +144,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     // Validate energy state transition if changing state
     if (energyState && energyState !== item.energyState) {
-      const allowedTransitions = validTransitions[item.energyState];
-      if (!allowedTransitions.includes(energyState)) {
+      if (!isValidTransition(item.energyState as EnergyState, energyState as EnergyState)) {
         return NextResponse.json(
           {
             error: `Invalid state transition from ${item.energyState} to ${energyState}`,

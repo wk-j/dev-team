@@ -12,7 +12,7 @@ interface ParticleFieldProps {
 }
 
 export function ParticleField({ 
-  count = 500, 
+  count = 150, 
   spread = 100,
   reducedMotion = false,
   particleDensity = 1.0,
@@ -32,9 +32,9 @@ export function ParticleField({
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
   
-  // Apply density multiplier to count (min 50, max 2000)
+  // Apply density multiplier to count (min 30, max 500)
   const actualCount = useMemo(() => {
-    return Math.max(50, Math.min(2000, Math.round(count * particleDensity)));
+    return Math.max(30, Math.min(500, Math.round(count * particleDensity)));
   }, [count, particleDensity]);
   
   const shouldReduceMotion = reducedMotion || prefersReducedMotion;

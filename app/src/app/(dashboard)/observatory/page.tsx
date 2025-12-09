@@ -9,6 +9,7 @@ import { ClassicView } from "@/components/ClassicView";
 import { ObservatoryGuide } from "@/components/canvas/ObservatoryGuide";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
 import type { StreamState } from "@/components/canvas/Stream";
+import { ENERGY_STATES, ENERGY_STATE_CONFIG } from "@/lib/constants";
 
 // Dynamic import to avoid SSR issues with Three.js
 const VoidCanvas = dynamic(
@@ -227,15 +228,8 @@ export default function ObservatoryPage() {
       {/* Overlay UI - Hidden in dive mode */}
       {!diveMode && (
         <>
-          {/* Top Left - Title & Stats Panel */}
+          {/* Top Left - Stats Panel */}
           <div className="absolute top-4 left-4 z-10 pointer-events-auto">
-            <div className="mb-3">
-              <h1 className="text-xl font-semibold text-text-stellar tracking-tight">Observatory</h1>
-              <p className="text-sm text-text-muted">
-                {isLoading ? "Loading..." : `${metrics.teamOnline} active · ${metrics.activeStreams} streams`}
-              </p>
-            </div>
-            
             {/* Stats panel */}
             {showStats && (
               <div className="glass-panel-float p-4 w-52">
@@ -375,22 +369,15 @@ export default function ObservatoryPage() {
               {/* Work item states */}
               <div className="text-[10px] text-text-dim uppercase tracking-wider font-medium mb-2">Work States</div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px]">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-energy-dormant" />
-                  <span className="text-text-dim">Dormant</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-energy-kindling" />
-                  <span className="text-text-dim">Kindling</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-energy-blazing" />
-                  <span className="text-text-dim">Blazing</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-energy-crystallized" />
-                  <span className="text-text-dim">Done</span>
-                </span>
+                {ENERGY_STATES.map((state) => (
+                  <span key={state} className="flex items-center gap-1.5">
+                    <span 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: ENERGY_STATE_CONFIG[state].color }}
+                    />
+                    <span className="text-text-dim">{ENERGY_STATE_CONFIG[state].label}</span>
+                  </span>
+                ))}
               </div>
             </div>
           </div>

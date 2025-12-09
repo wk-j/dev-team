@@ -4,8 +4,16 @@ import { useRef, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
-import { EnergyOrb, type EnergyState, type WorkItemDepth } from "./EnergyOrb";
+import { EnergyOrb } from "./EnergyOrb";
 import { StreamOriginStar, StreamDestinationStar } from "./Stream";
+import {
+  type EnergyState,
+  type WorkItemDepth,
+  ENERGY_STATE_CONFIG,
+  ENERGY_STATE_TRANSITIONS,
+  WORK_ITEM_DEPTH_CONFIG,
+  WORK_ITEM_DEPTHS,
+} from "@/lib/constants";
 
 interface DiveModeWorkItem {
   id: string;
@@ -44,36 +52,24 @@ interface DiveModeProps {
   hideOverlay?: boolean;
 }
 
-// Valid state transitions
-const stateTransitions: Record<EnergyState, { to: EnergyState; label: string; color: string }[]> = {
-  dormant: [{ to: "kindling", label: "Start", color: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border-orange-500/50" }],
-  kindling: [
-    { to: "blazing", label: "Focus", color: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/50" },
-    { to: "dormant", label: "Pause", color: "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border-gray-500/50" },
-  ],
-  blazing: [{ to: "cooling", label: "Wind Down", color: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border-purple-500/50" }],
-  cooling: [
-    { to: "crystallized", label: "Complete", color: "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border-cyan-500/50" },
-    { to: "blazing", label: "Continue", color: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/50" },
-  ],
-  crystallized: [],
-};
+// Valid state transitions - uses centralized config
+const stateTransitions = ENERGY_STATE_TRANSITIONS;
 
-// Depth configuration
+// Depth configuration - uses centralized config
 const depthConfig: Record<WorkItemDepth, { label: string; color: string; bg: string }> = {
-  shallow: { label: "Shallow", color: "text-sky-400", bg: "bg-sky-500/20" },
-  medium: { label: "Medium", color: "text-blue-400", bg: "bg-blue-500/20" },
-  deep: { label: "Deep", color: "text-indigo-400", bg: "bg-indigo-500/20" },
-  abyssal: { label: "Abyssal", color: "text-purple-400", bg: "bg-purple-500/20" },
+  shallow: { label: WORK_ITEM_DEPTH_CONFIG.shallow.label, color: WORK_ITEM_DEPTH_CONFIG.shallow.textColor, bg: WORK_ITEM_DEPTH_CONFIG.shallow.bg },
+  medium: { label: WORK_ITEM_DEPTH_CONFIG.medium.label, color: WORK_ITEM_DEPTH_CONFIG.medium.textColor, bg: WORK_ITEM_DEPTH_CONFIG.medium.bg },
+  deep: { label: WORK_ITEM_DEPTH_CONFIG.deep.label, color: WORK_ITEM_DEPTH_CONFIG.deep.textColor, bg: WORK_ITEM_DEPTH_CONFIG.deep.bg },
+  abyssal: { label: WORK_ITEM_DEPTH_CONFIG.abyssal.label, color: WORK_ITEM_DEPTH_CONFIG.abyssal.textColor, bg: WORK_ITEM_DEPTH_CONFIG.abyssal.bg },
 };
 
-// State colors for visual effects
+// State colors for visual effects - uses centralized config
 const stateColors: Record<EnergyState, string> = {
-  dormant: "#6b7280",
-  kindling: "#f97316",
-  blazing: "#fbbf24",
-  cooling: "#a78bfa",
-  crystallized: "#06b6d4",
+  dormant: ENERGY_STATE_CONFIG.dormant.color,
+  kindling: ENERGY_STATE_CONFIG.kindling.color,
+  blazing: ENERGY_STATE_CONFIG.blazing.color,
+  cooling: ENERGY_STATE_CONFIG.cooling.color,
+  crystallized: ENERGY_STATE_CONFIG.crystallized.color,
 };
 
 // Focused item highlight with pulsing rings
@@ -189,7 +185,7 @@ function calculateItemPosition(
 // Ambient underwater-like particles for dive mode
 function DiveParticles() {
   const particlesRef = useRef<THREE.Points>(null);
-  const count = 200;
+  const count = 60;
 
   const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);

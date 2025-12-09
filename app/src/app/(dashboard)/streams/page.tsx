@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { useStreams, useWorkItems, useCreateStream, useUpdateStream, useDeleteStream, useCreateWorkItem, useUpdateWorkItem, useDeleteWorkItem, useUsers, useMe, useTimeEntries, useTimeTracking } from "@/lib/api/hooks";
 import { api, type WorkItem } from "@/lib/api/client";
+import {
+  ENERGY_STATES,
+  ENERGY_STATE_CONFIG,
+  ENERGY_STATE_TRANSITIONS,
+  STREAM_STATES,
+  STREAM_STATE_CONFIG,
+  WORK_ITEM_DEPTHS,
+  WORK_ITEM_DEPTH_CONFIG,
+  type EnergyState,
+  type StreamState,
+  type WorkItemDepth,
+} from "@/lib/constants";
 
 // Format seconds to HH:MM:SS
 function formatDuration(seconds: number): string {
@@ -112,50 +124,43 @@ function TimeTracker({ workItemId, onUpdate }: { workItemId: string; onUpdate?: 
   );
 }
 
-// Energy state configuration
-const energyStates = {
-  dormant: { label: "Dormant", color: "text-gray-400", bg: "bg-gray-500/20", icon: "○" },
-  kindling: { label: "Kindling", color: "text-orange-400", bg: "bg-orange-500/20", icon: "◐" },
-  blazing: { label: "Blazing", color: "text-yellow-400", bg: "bg-yellow-500/20", icon: "●" },
-  cooling: { label: "Cooling", color: "text-purple-400", bg: "bg-purple-500/20", icon: "◑" },
-  crystallized: { label: "Done", color: "text-cyan-400", bg: "bg-cyan-500/20", icon: "◇" },
-} as const;
+// Energy state configuration - uses centralized config
+const energyStates = Object.fromEntries(
+  ENERGY_STATES.map(state => [state, {
+    label: state === "crystallized" ? "Done" : ENERGY_STATE_CONFIG[state].label,
+    color: `text-[${ENERGY_STATE_CONFIG[state].color}]`,
+    bg: ENERGY_STATE_CONFIG[state].bg,
+    icon: ENERGY_STATE_CONFIG[state].icon,
+  }])
+) as Record<EnergyState, { label: string; color: string; bg: string; icon: string }>;
 
-// Depth configuration
-const depthConfig = {
-  shallow: { label: "Shallow", color: "text-sky-400", bg: "bg-sky-500/20", icon: "~", description: "Quick task, < 1 hour" },
-  medium: { label: "Medium", color: "text-blue-400", bg: "bg-blue-500/20", icon: "≈", description: "Half-day task" },
-  deep: { label: "Deep", color: "text-indigo-400", bg: "bg-indigo-500/20", icon: "≋", description: "Full day or more" },
-  abyssal: { label: "Abyssal", color: "text-purple-400", bg: "bg-purple-500/20", icon: "◈", description: "Multi-day deep work" },
-} as const;
+// Depth configuration - uses centralized config
+const depthConfig = Object.fromEntries(
+  WORK_ITEM_DEPTHS.map(depth => [depth, {
+    label: WORK_ITEM_DEPTH_CONFIG[depth].label,
+    color: WORK_ITEM_DEPTH_CONFIG[depth].textColor,
+    bg: WORK_ITEM_DEPTH_CONFIG[depth].bg,
+    icon: WORK_ITEM_DEPTH_CONFIG[depth].icon,
+    description: WORK_ITEM_DEPTH_CONFIG[depth].description,
+  }])
+) as Record<WorkItemDepth, { label: string; color: string; bg: string; icon: string; description: string }>;
 
-type DepthType = keyof typeof depthConfig;
+type DepthType = WorkItemDepth;
 
-// Stream state configuration
-const streamStateConfig = {
-  nascent: { label: "Nascent", color: "text-slate-400", bg: "bg-slate-500/20", description: "New stream, just created" },
-  flowing: { label: "Flowing", color: "text-cyan-400", bg: "bg-cyan-500/20", description: "Normal, healthy pace" },
-  rushing: { label: "Rushing", color: "text-yellow-400", bg: "bg-yellow-500/20", description: "High activity, fast moving" },
-  flooding: { label: "Flooding", color: "text-red-400", bg: "bg-red-500/20", description: "Overloaded, needs attention" },
-  stagnant: { label: "Stagnant", color: "text-gray-400", bg: "bg-gray-500/20", description: "Blocked or inactive" },
-} as const;
+// Stream state configuration - uses centralized config
+const streamStateConfig = Object.fromEntries(
+  STREAM_STATES.filter(s => s !== "evaporated").map(state => [state, {
+    label: STREAM_STATE_CONFIG[state].label,
+    color: `text-[${STREAM_STATE_CONFIG[state].color}]`,
+    bg: STREAM_STATE_CONFIG[state].bg,
+    description: STREAM_STATE_CONFIG[state].description,
+  }])
+) as Record<Exclude<StreamState, "evaporated">, { label: string; color: string; bg: string; description: string }>;
 
-type StreamStateType = keyof typeof streamStateConfig;
+type StreamStateType = Exclude<StreamState, "evaporated">;
 
-// Valid state transitions
-const transitions: Record<string, { to: string; label: string; color: string }[]> = {
-  dormant: [{ to: "kindling", label: "Start", color: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30" }],
-  kindling: [
-    { to: "blazing", label: "Focus", color: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30" },
-    { to: "dormant", label: "Pause", color: "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30" },
-  ],
-  blazing: [{ to: "cooling", label: "Wind Down", color: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30" }],
-  cooling: [
-    { to: "crystallized", label: "Complete", color: "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30" },
-    { to: "blazing", label: "Continue", color: "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30" },
-  ],
-  crystallized: [],
-};
+// Valid state transitions - uses centralized config
+const transitions = ENERGY_STATE_TRANSITIONS;
 
 export default function StreamsPage() {
   const [showClosedStreams, setShowClosedStreams] = useState(false);
@@ -638,7 +643,11 @@ export default function StreamsPage() {
                               <button
                                 key={t.to}
                                 onClick={() => handleStateChange(item.id, t.to)}
-                                className={`px-2 py-1 text-xs rounded transition-colors ${t.color}`}
+                                className="px-2 py-1 text-xs rounded transition-colors hover:opacity-80"
+                                style={{
+                                  backgroundColor: `${ENERGY_STATE_CONFIG[t.to].color}20`,
+                                  color: ENERGY_STATE_CONFIG[t.to].color,
+                                }}
                               >
                                 {t.label}
                               </button>

@@ -4,9 +4,14 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
+import {
+  type EnergyState,
+  type WorkItemDepth,
+  ENERGY_STATE_CONFIG,
+  WORK_ITEM_DEPTH_CONFIG,
+} from "@/lib/constants";
 
-export type EnergyState = "dormant" | "kindling" | "blazing" | "cooling" | "crystallized";
-export type WorkItemDepth = "shallow" | "medium" | "deep" | "abyssal";
+export type { EnergyState, WorkItemDepth };
 
 interface EnergyOrbProps {
   id: string;
@@ -23,7 +28,7 @@ interface EnergyOrbProps {
   showLabel?: boolean;
 }
 
-// Energy state visual configuration - simplified for cleaner visuals
+// Energy state visual configuration - uses centralized config
 const energyConfig: Record<EnergyState, {
   color: string;
   emissiveIntensity: number;
@@ -31,21 +36,19 @@ const energyConfig: Record<EnergyState, {
   particleCount: number;
   wireframe: boolean;
 }> = {
-  dormant: { color: "#6b7280", emissiveIntensity: 0.3, pulseSpeed: 0.3, particleCount: 0, wireframe: false },
-  kindling: { color: "#f97316", emissiveIntensity: 0.8, pulseSpeed: 1.0, particleCount: 0, wireframe: false },
-  blazing: { color: "#fbbf24", emissiveIntensity: 1.0, pulseSpeed: 1.5, particleCount: 0, wireframe: false },
-  cooling: { color: "#a78bfa", emissiveIntensity: 0.5, pulseSpeed: 0.5, particleCount: 0, wireframe: false },
-  crystallized: { color: "#06b6d4", emissiveIntensity: 0.6, pulseSpeed: 0.2, particleCount: 0, wireframe: false },
+  dormant: { color: ENERGY_STATE_CONFIG.dormant.color, emissiveIntensity: 0.3, pulseSpeed: 0.3, particleCount: 0, wireframe: false },
+  kindling: { color: ENERGY_STATE_CONFIG.kindling.color, emissiveIntensity: 0.8, pulseSpeed: 1.0, particleCount: 0, wireframe: false },
+  blazing: { color: ENERGY_STATE_CONFIG.blazing.color, emissiveIntensity: 1.0, pulseSpeed: 1.5, particleCount: 0, wireframe: false },
+  cooling: { color: ENERGY_STATE_CONFIG.cooling.color, emissiveIntensity: 0.5, pulseSpeed: 0.5, particleCount: 0, wireframe: false },
+  crystallized: { color: ENERGY_STATE_CONFIG.crystallized.color, emissiveIntensity: 0.6, pulseSpeed: 0.2, particleCount: 0, wireframe: false },
 };
 
-// Depth affects size - BASE_SCALE keeps orbs small relative to the scene
-const BASE_ORB_SCALE = 0.4; // Base multiplier to keep orbs small
-
+// Depth affects size - uses centralized scale values
 const depthScale: Record<WorkItemDepth, number> = {
-  shallow: BASE_ORB_SCALE * 0.6,   // 0.24
-  medium: BASE_ORB_SCALE * 0.8,    // 0.32
-  deep: BASE_ORB_SCALE * 1.0,      // 0.4
-  abyssal: BASE_ORB_SCALE * 1.3,   // 0.52
+  shallow: WORK_ITEM_DEPTH_CONFIG.shallow.scale,
+  medium: WORK_ITEM_DEPTH_CONFIG.medium.scale,
+  deep: WORK_ITEM_DEPTH_CONFIG.deep.scale,
+  abyssal: WORK_ITEM_DEPTH_CONFIG.abyssal.scale,
 };
 
 // Crystallization particle burst effect
@@ -411,6 +414,11 @@ export function EnergyOrb({
         <CrystalSparkles scale={scale} color={config.color} />
       )}
 
+      {/* Blazing/focus effect - aura and rings */}
+      {energyState === "blazing" && (
+        <BlazingFocusEffect scale={scale} />
+      )}
+
       {/* Persistent title label - always visible when not hovered */}
       {showLabel && !hovered && (
         <Html 
@@ -446,26 +454,194 @@ export function EnergyOrb({
           style={{ pointerEvents: "none" }}
           zIndexRange={[1200, 1300]}
         >
-          <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 text-center whitespace-nowrap pointer-events-none shadow-2xl min-w-[180px]">
-            <div className="text-base font-semibold text-text-bright truncate max-w-[200px]">
-              {title}
-            </div>
-            <div className="text-sm text-text-muted flex items-center justify-center gap-2 mt-2">
-              <span
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: config.color, boxShadow: `0 0 8px ${config.color}` }}
+          {energyState === "blazing" ? (
+            /* Enhanced blazing/focus hover tooltip */
+            <div 
+              className="relative rounded-xl px-5 py-4 text-center whitespace-nowrap pointer-events-none min-w-[200px] overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, rgba(5, 8, 15, 0.98), rgba(20, 15, 5, 0.95))",
+                border: "1px solid rgba(251, 191, 36, 0.5)",
+                boxShadow: "0 0 30px rgba(251, 191, 36, 0.3), 0 0 60px rgba(249, 115, 22, 0.2), 0 20px 40px rgba(0,0,0,0.5)",
+              }}
+            >
+              {/* Animated gradient border glow */}
+              <div 
+                className="absolute inset-0 rounded-xl opacity-30"
+                style={{
+                  background: "radial-gradient(ellipse at top, rgba(251, 191, 36, 0.4) 0%, transparent 60%)",
+                }}
               />
-              {energyState.charAt(0).toUpperCase() + energyState.slice(1)}
-              {energyState === "crystallized" && " ✨"}
-            </div>
-            {assignee && (
-              <div className="text-sm text-text-dim mt-3 pt-3 border-t border-void-atmosphere">
-                {assignee}
+              
+              {/* Focus badge */}
+              <div className="relative mb-2">
+                <span 
+                  className="inline-block text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest"
+                  style={{ 
+                    background: "linear-gradient(135deg, #fbbf24, #f97316)",
+                    color: "#000",
+                    boxShadow: "0 0 15px rgba(251, 191, 36, 0.6)",
+                  }}
+                >
+                  In Focus
+                </span>
               </div>
-            )}
-          </div>
+              
+              <div className="relative text-base font-semibold text-white truncate max-w-[200px]">
+                {title}
+              </div>
+              
+              <div className="relative flex items-center justify-center gap-2 mt-2">
+                <div className="relative">
+                  <span
+                    className="w-3 h-3 rounded-full block animate-pulse"
+                    style={{ 
+                      backgroundColor: "#fbbf24", 
+                      boxShadow: "0 0 12px #fbbf24, 0 0 24px rgba(251, 191, 36, 0.5)" 
+                    }}
+                  />
+                </div>
+                <span className="text-sm" style={{ color: "#fbbf24" }}>
+                  Active Work
+                </span>
+              </div>
+              
+              {assignee && (
+                <div 
+                  className="relative text-sm mt-3 pt-3"
+                  style={{ 
+                    color: "#fbbf24",
+                    borderTop: "1px solid rgba(251, 191, 36, 0.3)",
+                  }}
+                >
+                  {assignee}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Standard hover tooltip */
+            <div className="bg-void-deep/95 backdrop-blur-md border border-void-atmosphere rounded-xl px-5 py-4 text-center whitespace-nowrap pointer-events-none shadow-2xl min-w-[180px]">
+              <div className="text-base font-semibold text-text-bright truncate max-w-[200px]">
+                {title}
+              </div>
+              <div className="text-sm text-text-muted flex items-center justify-center gap-2 mt-2">
+                <span
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: config.color, boxShadow: `0 0 8px ${config.color}` }}
+                />
+                {energyState.charAt(0).toUpperCase() + energyState.slice(1)}
+                {energyState === "crystallized" && " ✨"}
+              </div>
+              {assignee && (
+                <div className="text-sm text-text-dim mt-3 pt-3 border-t border-void-atmosphere">
+                  {assignee}
+                </div>
+              )}
+            </div>
+          )}
         </Html>
       )}
+    </group>
+  );
+}
+
+// Blazing Focus Effect - aura and rings for items in focus mode
+function BlazingFocusEffect({ scale }: { scale: number }) {
+  const auraRef = useRef<THREE.Mesh>(null);
+  const innerAuraRef = useRef<THREE.Mesh>(null);
+  const ring1Ref = useRef<THREE.Mesh>(null);
+  const ring2Ref = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+
+    // Pulsing aura
+    if (auraRef.current) {
+      const pulse = 1 + Math.sin(t * 3) * 0.15;
+      auraRef.current.scale.setScalar(pulse);
+      const mat = auraRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.12 + Math.sin(t * 4) * 0.06;
+    }
+
+    // Inner aura with faster pulse
+    if (innerAuraRef.current) {
+      const pulse = 1 + Math.sin(t * 5) * 0.1;
+      innerAuraRef.current.scale.setScalar(pulse);
+      const mat = innerAuraRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.2 + Math.sin(t * 6) * 0.1;
+    }
+
+    // Rotating energy rings
+    if (ring1Ref.current) {
+      ring1Ref.current.rotation.z = t * 2;
+      const mat = ring1Ref.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.3 + Math.sin(t * 4) * 0.15;
+    }
+    if (ring2Ref.current) {
+      ring2Ref.current.rotation.z = -t * 1.5;
+      const mat = ring2Ref.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.25 + Math.sin(t * 3 + 1) * 0.1;
+    }
+  });
+
+  return (
+    <group>
+      {/* Outer pulsing aura */}
+      <mesh ref={auraRef} scale={scale * 3}>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshBasicMaterial
+          color="#fbbf24"
+          transparent
+          opacity={0.15}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Inner brighter aura */}
+      <mesh ref={innerAuraRef} scale={scale * 2}>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.2}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Rotating energy ring 1 */}
+      <mesh ref={ring1Ref} rotation={[Math.PI / 2, 0, 0]} scale={scale * 2.2}>
+        <ringGeometry args={[0.9, 1, 32]} />
+        <meshBasicMaterial
+          color="#fbbf24"
+          transparent
+          opacity={0.4}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Rotating energy ring 2 - tilted */}
+      <mesh ref={ring2Ref} rotation={[Math.PI / 3, Math.PI / 4, 0]} scale={scale * 2.5}>
+        <ringGeometry args={[0.9, 1, 32]} />
+        <meshBasicMaterial
+          color="#f97316"
+          transparent
+          opacity={0.3}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Bright point light */}
+      <pointLight
+        color="#fbbf24"
+        intensity={2}
+        distance={scale * 6}
+        decay={2}
+      />
     </group>
   );
 }

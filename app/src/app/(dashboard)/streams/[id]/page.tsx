@@ -6,8 +6,22 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useStream, useStreams, useWorkItems, useUpdateWorkItem, useCreateWorkItem, useUpdateStream, useTeam, useMe, useTimeEntries, useTimeTracking } from "@/lib/api/hooks";
 import type { DiveModeState } from "@/components/canvas/VoidCanvas";
-import type { StreamState } from "@/components/canvas/Stream";
 import type { WorkItem as WorkItemType } from "@/lib/api/client";
+import {
+  type StreamState,
+  type EnergyState,
+  type WorkItemDepth,
+  STREAM_STATES,
+  STREAM_STATE_CONFIG,
+  ENERGY_STATES,
+  ENERGY_STATE_CONFIG,
+  ENERGY_STATE_TRANSITIONS,
+  WORK_ITEM_DEPTHS,
+  WORK_ITEM_DEPTH_CONFIG,
+  getEnergyStateColor,
+  getEnergyStateLabel,
+  getAvailableTransitions,
+} from "@/lib/constants";
 
 // Format duration to show time with visible updates (e.g., "6:42" or "1:23:45")
 function formatDurationCompact(seconds: number): string {
@@ -186,15 +200,16 @@ function MetricCard({
   );
 }
 
-// Stream state config
-const streamStateConfig: Record<string, { bg: string; text: string; glow: string; color: string; label: string }> = {
-  nascent: { bg: "bg-gray-500/20", text: "text-gray-400", glow: "shadow-gray-500/20", color: "#6b7280", label: "Nascent" },
-  flowing: { bg: "bg-cyan-500/20", text: "text-cyan-400", glow: "shadow-cyan-500/30", color: "#00d4ff", label: "Flowing" },
-  rushing: { bg: "bg-yellow-500/20", text: "text-yellow-400", glow: "shadow-yellow-500/30", color: "#fbbf24", label: "Rushing" },
-  flooding: { bg: "bg-red-500/20", text: "text-red-400", glow: "shadow-red-500/30", color: "#ef4444", label: "Flooding" },
-  stagnant: { bg: "bg-slate-500/20", text: "text-slate-400", glow: "shadow-slate-500/20", color: "#64748b", label: "Stagnant" },
-  evaporated: { bg: "bg-gray-700/20", text: "text-gray-500", glow: "shadow-gray-700/20", color: "#374151", label: "Evaporated" },
-};
+// Stream state config - uses centralized config
+const streamStateConfig: Record<string, { bg: string; text: string; glow: string; color: string; label: string }> = Object.fromEntries(
+  STREAM_STATES.map(state => [state, {
+    bg: STREAM_STATE_CONFIG[state].bg,
+    text: `text-[${STREAM_STATE_CONFIG[state].color}]`,
+    glow: STREAM_STATE_CONFIG[state].glow,
+    color: STREAM_STATE_CONFIG[state].color,
+    label: STREAM_STATE_CONFIG[state].label,
+  }])
+);
 
 // State badge with glow effect
 function StateBadge({ state, className = "" }: { state: string; className?: string }) {
@@ -221,7 +236,7 @@ function StreamStateDropdown({
   onToggle: () => void;
   disabled?: boolean;
 }) {
-  const states = ["nascent", "flowing", "rushing", "flooding", "stagnant", "evaporated"];
+  const states = STREAM_STATES;
   const config = streamStateConfig[currentState] ?? streamStateConfig.flowing!;
 
   return (
@@ -292,21 +307,8 @@ function WorkItemCard({
   onClick: () => void;
   onStateChange?: (newState: string) => void;
 }) {
-  const stateColors: Record<string, string> = {
-    dormant: "#6b7280",
-    kindling: "#f97316",
-    blazing: "#fbbf24",
-    cooling: "#a78bfa",
-    crystallized: "#06b6d4",
-  };
-  const stateLabels: Record<string, string> = {
-    dormant: "DORMANT",
-    kindling: "KINDLING",
-    blazing: "BLAZING",
-    cooling: "COOLING",
-    crystallized: "DONE",
-  };
-  const color = stateColors[item.energyState] ?? "#6b7280";
+  const color = getEnergyStateColor(item.energyState as EnergyState);
+  const stateLabel = item.energyState === "crystallized" ? "DONE" : getEnergyStateLabel(item.energyState as EnergyState).toUpperCase();
   
   return (
     <div
@@ -336,7 +338,7 @@ function WorkItemCard({
         <div className="flex items-center gap-3 flex-shrink-0">
           <TimeTracker workItemId={item.id} />
           <span className="text-xs text-text-muted uppercase tracking-wide min-w-[70px] text-right">
-            {stateLabels[item.energyState] ?? item.energyState.toUpperCase()}
+            {stateLabel}
           </span>
         </div>
       </div>
@@ -501,39 +503,8 @@ function WorkItemDetailPanel({
 }) {
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   
-  const stateColors: Record<string, string> = {
-    dormant: "#6b7280",
-    kindling: "#f97316",
-    blazing: "#fbbf24",
-    cooling: "#a78bfa",
-    crystallized: "#06b6d4",
-  };
-  const stateLabels: Record<string, string> = {
-    dormant: "Dormant",
-    kindling: "Kindling",
-    blazing: "Blazing",
-    cooling: "Cooling",
-    crystallized: "Crystallized",
-  };
-  const allStates = ["dormant", "kindling", "blazing", "cooling", "crystallized"];
-  const color = stateColors[item.energyState] ?? "#6b7280";
-
-  // Valid state transitions
-  const stateTransitions: Record<string, { to: string; label: string }[]> = {
-    dormant: [{ to: "kindling", label: "Start Working" }],
-    kindling: [
-      { to: "blazing", label: "Focus Mode" },
-      { to: "dormant", label: "Pause" },
-    ],
-    blazing: [{ to: "cooling", label: "Wind Down" }],
-    cooling: [
-      { to: "crystallized", label: "Complete" },
-      { to: "blazing", label: "Continue" },
-    ],
-    crystallized: [],
-  };
-
-  const availableTransitions = stateTransitions[item.energyState] ?? [];
+  const color = getEnergyStateColor(item.energyState as EnergyState);
+  const availableTransitions = getAvailableTransitions(item.energyState as EnergyState);
 
   return (
     <div className="absolute bottom-20 right-4 w-80 z-30">
@@ -658,8 +629,8 @@ function WorkItemDetailPanel({
                   >
                     Change Status
                   </div>
-                  {allStates.map((state) => {
-                    const stateColor = stateColors[state]!;
+                  {ENERGY_STATES.map((state) => {
+                    const stateColor = ENERGY_STATE_CONFIG[state].color;
                     const isCurrentState = state === item.energyState;
                     const isValidTransition = availableTransitions.some(t => t.to === state);
                     const isDisabled = !isCurrentState && !isValidTransition;
@@ -689,7 +660,7 @@ function WorkItemDetailPanel({
                             boxShadow: isCurrentState ? `0 0 6px ${stateColor}` : 'none',
                           }} 
                         />
-                        {stateLabels[state]}
+                        {ENERGY_STATE_CONFIG[state].label}
                         {isCurrentState && (
                           <svg className="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -729,7 +700,7 @@ function WorkItemDetailPanel({
           <div className="mb-4">
             <div className="text-xs text-text-muted/70 mb-2">Change Depth:</div>
             <div className="flex gap-1.5">
-              {(["shallow", "medium", "deep", "abyssal"] as const).map((d) => {
+              {WORK_ITEM_DEPTHS.map((d) => {
                 const isSelected = item.depth === d;
                 return (
                   <button
@@ -745,7 +716,7 @@ function WorkItemDetailPanel({
                       border: `1px solid ${isSelected ? color + '50' : 'rgba(255,255,255,0.05)'}`,
                     }}
                   >
-                    {d}
+                    {WORK_ITEM_DEPTH_CONFIG[d].label}
                   </button>
                 );
               })}
@@ -758,7 +729,7 @@ function WorkItemDetailPanel({
               <div className="text-xs text-text-muted/70">Actions:</div>
               <div className="flex flex-wrap gap-2">
                 {availableTransitions.map((t) => {
-                  const targetColor = stateColors[t.to] ?? color;
+                  const targetColor = ENERGY_STATE_CONFIG[t.to].color;
                   return (
                     <button
                       key={t.to}

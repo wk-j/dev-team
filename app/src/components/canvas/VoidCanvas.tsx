@@ -404,10 +404,10 @@ export function VoidCanvas({
           {/* ZONE 4: AMBIENT - Background particles      */}
           {/* ============================================ */}
           <ParticleField 
-            count={reducedMotion ? 100 : 250} 
+            count={reducedMotion ? 40 : 80} 
             spread={LAYOUT.ambient.outerRadius} 
             reducedMotion={reducedMotion}
-            particleDensity={particleDensity * 0.7}
+            particleDensity={particleDensity * 0.5}
           />
 
           {/* No zone boundaries needed for horizontal layout */}

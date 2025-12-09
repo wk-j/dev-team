@@ -4,8 +4,13 @@ import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Line, Html } from "@react-three/drei";
 import * as THREE from "three";
+import { 
+  type StreamState, 
+  STREAM_STATE_CONFIG,
+  getStreamStateColor,
+} from "@/lib/constants";
 
-export type StreamState = "nascent" | "flowing" | "rushing" | "flooding" | "stagnant" | "evaporated";
+export type { StreamState };
 
 // Animated stream origin star - energetic, outward radiating
 export function StreamOriginStar({ 
@@ -403,22 +408,8 @@ interface StreamProps {
   onClick?: () => void;
 }
 
-// Stream state visual configuration - softer, more organic appearance
-// Speed ranges from very slow (stagnant) to very fast (flooding)
-const streamConfig: Record<StreamState, {
-  color: string;
-  particleSpeed: number;
-  particleDensity: number;
-  lineWidth: number;
-  opacity: number;
-}> = {
-  nascent: { color: "#64748b", particleSpeed: 0.15, particleDensity: 0.4, lineWidth: 1.5, opacity: 0.5 },    // Slow, just starting
-  flowing: { color: "#00d4ff", particleSpeed: 0.4, particleDensity: 0.7, lineWidth: 2, opacity: 0.6 },      // Moderate pace
-  rushing: { color: "#fbbf24", particleSpeed: 0.9, particleDensity: 0.9, lineWidth: 2.5, opacity: 0.7 },    // Fast
-  flooding: { color: "#ef4444", particleSpeed: 1.5, particleDensity: 1.0, lineWidth: 3, opacity: 0.8 },     // Very fast, intense
-  stagnant: { color: "#6b7280", particleSpeed: 0.03, particleDensity: 0.3, lineWidth: 1.5, opacity: 0.4 },  // Almost stopped
-  evaporated: { color: "#374151", particleSpeed: 0, particleDensity: 0.1, lineWidth: 1, opacity: 0.3 },     // No movement
-};
+// Stream state visual configuration - uses centralized config
+const streamConfig = STREAM_STATE_CONFIG;
 
 export function Stream({ 
   id, 

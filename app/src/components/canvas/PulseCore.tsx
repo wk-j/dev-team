@@ -76,7 +76,7 @@ export function PulseCore({
 
   // Create orbital ring particles
   const ringParticles = useMemo(() => {
-    const count = 60; // Reduced count
+    const count = 24; // Minimal count
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     
@@ -100,7 +100,7 @@ export function PulseCore({
 
   // Ambient energy particles floating around
   const ambientParticles = useMemo(() => {
-    const count = 30; // Reduced count
+    const count = 12; // Minimal count
     const positions = new Float32Array(count * 3);
     const velocities: THREE.Vector3[] = [];
     
