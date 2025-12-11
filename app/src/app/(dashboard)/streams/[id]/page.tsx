@@ -1050,6 +1050,20 @@ export default function StreamDetailPage() {
     return items;
   }, [streamDetails?.workItems, filterState, sortOption]);
 
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, WorkItemType[]> = {
+      crystallized: [],
+      blazing: [],
+      kindling: [],
+      cooling: [],
+      dormant: [],
+    };
+    for (const item of filteredAndSortedItems) {
+      (groups[item.energyState] ||= []).push(item);
+    }
+    return groups;
+  }, [filteredAndSortedItems]);
+
   // Get selected item
   const selectedItem = useMemo(() => {
     if (!selectedItemId || !streamDetails?.workItems) return null;
@@ -1344,18 +1358,36 @@ export default function StreamDetailPage() {
               </div>
             )}
             
-            {/* Work Items List */}
-            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
-              {filteredAndSortedItems.map((item) => (
-                <WorkItemCard
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedItemId === item.id}
-                  onClick={() => setSelectedItemId(selectedItemId === item.id ? null : item.id)}
-                  onStateChange={(newState) => handleWorkItemStateChange(item.id, newState)}
-                />
-              ))}
-              
+            <div className="flex-1 overflow-y-auto px-3 pb-3">
+              {(["crystallized","blazing","kindling","cooling","dormant"] as const).map((state) => {
+                const items = groupedItems[state];
+                if (!items || items.length === 0) return null;
+                const color = getEnergyStateColor(state as EnergyState);
+                const label = state === "crystallized" ? "Done" : getEnergyStateLabel(state as EnergyState);
+                return (
+                  <div key={state} className="mb-3">
+                    <div className="sticky top-0 z-10 bg-void-deep/80 backdrop-blur-xl px-2 py-1 border-b border-void-atmosphere flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                        <span className="text-xs capitalize" style={{ color }}>{label}</span>
+                      </div>
+                      <span className="text-[10px] text-text-muted">{items.length}</span>
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      {items.map((item) => (
+                        <WorkItemCard
+                          key={item.id}
+                          item={item}
+                          isSelected={selectedItemId === item.id}
+                          onClick={() => setSelectedItemId(selectedItemId === item.id ? null : item.id)}
+                          onStateChange={(newState) => handleWorkItemStateChange(item.id, newState)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
               {filteredAndSortedItems.length === 0 && (streamDetails.workItems?.length ?? 0) > 0 && (
                 <div className="text-center py-6 text-text-muted">
                   <p className="text-xs">No items match filter</p>
@@ -1367,7 +1399,7 @@ export default function StreamDetailPage() {
                   </button>
                 </div>
               )}
-              
+
               {(!streamDetails.workItems || streamDetails.workItems.length === 0) && (
                 <div className="text-center py-6 text-text-muted">
                   <p className="text-xs">No work items yet</p>
