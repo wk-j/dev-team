@@ -175,6 +175,7 @@ export default function ObservatoryPage() {
 
   const isLoading = streamsLoading || workItemsLoading;
   const hasError = !!streamsError;
+  const pulseVisible = (currentUserData as any)?.preferences?.teamPulse?.visible ?? false;
 
   // Render classic 2D view if accessibility setting is enabled
   if (isClassicView) {
@@ -208,22 +209,23 @@ export default function ObservatoryPage() {
             </div>
           </div>
         )}
-        <VoidCanvas 
-          className="w-full h-full" 
-          showPerformance={showPerformance}
-          showStreams={true}
-          streams={streams ?? undefined}
-          workItems={workItems ?? undefined}
-          teamMembers={teamMembers}
-          teamMemberCount={teamMembers.length || 1}
-          diveMode={diveMode}
-          onDiveIntoStream={handleDiveIntoStream}
-          onSurfaceFromStream={handleSurface}
-          onWorkItemKindle={handleKindleWorkItem}
-          onWorkItemStateChange={handleWorkItemStateChange}
-          onWorkItemDepthChange={handleWorkItemDepthChange}
-          teamPulseSettings={(currentUserData as any)?.preferences?.teamPulse}
-        />
+          <VoidCanvas 
+            className="w-full h-full" 
+            showPerformance={showPerformance}
+            showStreams={true}
+            streams={streams ?? undefined}
+            workItems={workItems ?? undefined}
+            teamMembers={teamMembers}
+            teamMemberCount={teamMembers.length || 1}
+            diveMode={diveMode}
+            onDiveIntoStream={handleDiveIntoStream}
+            onSurfaceFromStream={handleSurface}
+            onWorkItemKindle={handleKindleWorkItem}
+            onWorkItemStateChange={handleWorkItemStateChange}
+            onWorkItemDepthChange={handleWorkItemDepthChange}
+            showPulseCore={pulseVisible}
+            teamPulseSettings={(currentUserData as any)?.preferences?.teamPulse}
+          />
       </div>
 
       {/* Overlay UI - Hidden in dive mode */}
