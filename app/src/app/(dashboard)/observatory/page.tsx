@@ -32,6 +32,7 @@ export default function ObservatoryPage() {
   const [showPerformance, setShowPerformance] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [legendCollapsed, setLegendCollapsed] = useState(false);
   const [diveMode, setDiveMode] = useState<DiveModeState | null>(null);
   
   // Check if classic view is enabled
@@ -341,44 +342,67 @@ export default function ObservatoryPage() {
 
           {/* Legend - bottom right */}
           <div className="absolute bottom-4 right-4 z-10 pointer-events-auto hidden md:block">
-            <div className="glass-panel-float p-3 min-w-[200px]">
-              <div className="text-[10px] text-text-dim uppercase tracking-wider font-medium mb-2">Legend</div>
-              
-              {/* Element types */}
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-accent-primary to-accent-primary/50 flex-shrink-0 shadow-[0_0_8px_rgba(0,212,255,0.4)]" />
-                  <span className="text-text-muted">Team Pulse (center)</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-0.5 bg-accent-primary flex-shrink-0 rounded shadow-[0_0_4px_rgba(0,212,255,0.4)]" />
-                  <span className="text-text-muted">Work Stream</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-3 h-3 rounded-full bg-energy-blazing flex-shrink-0 shadow-[0_0_6px_rgba(255,215,0,0.4)]" />
-                  <span className="text-text-muted">Work Item (active)</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-3 h-3 rounded-full bg-[#ff6b9d] ring-2 ring-[#ff6b9d]/30 flex-shrink-0" />
-                  <span className="text-text-muted">Team Member (outer ring)</span>
-                </div>
+            <div className="glass-panel-float p-3 min-w-[200px] pointer-events-auto">
+              <div
+                className={`flex items-center justify-between ${legendCollapsed ? "mb-0" : "mb-2"} cursor-pointer select-none`}
+                onClick={() => setLegendCollapsed(!legendCollapsed)}
+              >
+                <div className="text-[10px] text-text-dim uppercase tracking-wider font-medium">Legend</div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLegendCollapsed(!legendCollapsed);
+                  }}
+                  className="p-1 rounded text-text-dim hover:text-text-bright hover:bg-void-atmosphere transition-colors"
+                  title={legendCollapsed ? "Expand" : "Collapse"}
+                >
+                  {legendCollapsed ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                </button>
               </div>
-
-              <div className="h-px bg-void-atmosphere/60 my-2.5" />
-              
-              {/* Work item states */}
-              <div className="text-[10px] text-text-dim uppercase tracking-wider font-medium mb-2">Work States</div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px]">
-                {ENERGY_STATES.map((state) => (
-                  <span key={state} className="flex items-center gap-1.5">
-                    <span 
-                      className="w-2 h-2 rounded-full" 
-                      style={{ backgroundColor: ENERGY_STATE_CONFIG[state].color }}
-                    />
-                    <span className="text-text-dim">{ENERGY_STATE_CONFIG[state].label}</span>
-                  </span>
-                ))}
-              </div>
+              {!legendCollapsed && (
+                <>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-accent-primary to-accent-primary/50 flex-shrink-0 shadow-[0_0_8px_rgba(0,212,255,0.4)]" />
+                      <span className="text-text-muted">Team Pulse (center)</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-0.5 bg-accent-primary flex-shrink-0 rounded shadow-[0_0_4px_rgba(0,212,255,0.4)]" />
+                      <span className="text-text-muted">Work Stream</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3 h-3 rounded-full bg-energy-blazing flex-shrink-0 shadow-[0_0_6px_rgba(255,215,0,0.4)]" />
+                      <span className="text-text-muted">Work Item (active)</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3 h-3 rounded-full bg-[#ff6b9d] ring-2 ring-[#ff6b9d]/30 flex-shrink-0" />
+                      <span className="text-text-muted">Team Member (outer ring)</span>
+                    </div>
+                  </div>
+                  <div className="h-px bg-void-atmosphere/60 my-2.5" />
+                  <div className="text-[10px] text-text-dim uppercase tracking-wider font-medium mb-2">Work States</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px]">
+                    {ENERGY_STATES.map((state) => (
+                      <span key={state} className="flex items-center gap-1.5">
+                        <span 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: ENERGY_STATE_CONFIG[state].color }}
+                        />
+                        <span className="text-text-dim">{ENERGY_STATE_CONFIG[state].label}</span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </>

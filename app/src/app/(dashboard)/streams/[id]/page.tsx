@@ -507,21 +507,34 @@ function WorkItemDetailPanel({
   const availableTransitions = getAvailableTransitions(item.energyState as EnergyState);
 
   return (
-    <div className="absolute bottom-20 right-4 w-80 z-30">
+    <div
+      className="fixed inset-0 z-[9999] pointer-events-auto flex items-center justify-center p-4"
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="absolute inset-0 bg-void-deep/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
       {/* Seamless canvas-integrated panel */}
       <div 
-        className="relative rounded-2xl p-4 overflow-hidden"
+        className="relative z-[10000] rounded-2xl p-4 overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, ${color}08 0%, transparent 50%, ${color}05 100%)`,
-          boxShadow: `0 0 60px ${color}10, inset 0 0 30px ${color}05`,
+          background: `linear-gradient(135deg, ${color}1E 0%, ${color}12 50%, ${color}14 100%)`,
+          boxShadow: `0 0 60px ${color}30, inset 0 0 30px ${color}20`,
         }}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Subtle animated border glow */}
         <div 
           className="absolute inset-0 rounded-2xl pointer-events-none"
           style={{
-            border: `1px solid ${color}30`,
-            boxShadow: `inset 0 1px 0 ${color}20`,
+            border: `1px solid ${color}40`,
+            boxShadow: `inset 0 1px 0 ${color}30`,
           }}
         />
         
@@ -561,7 +574,11 @@ function WorkItemDetailPanel({
 
         {/* Close button */}
         <button
-          onClick={onClose}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
           className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110"
           style={{ 
             background: `${color}20`,
