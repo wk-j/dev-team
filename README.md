@@ -1,4 +1,4 @@
-# FlowState
+# Flow State
 
 > Work is not a checklist. It's a living system of energy, momentum, and human connection.
 
